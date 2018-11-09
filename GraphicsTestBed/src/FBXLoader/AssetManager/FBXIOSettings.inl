@@ -1,0 +1,7 @@
+//NTR_LoadProperty(IMP_FBX_MATERIAL, true)
+//NTR_LoadProperty(IMP_FBX_TEXTURE, true)
+//NTR_LoadProperty(IMP_FBX_LINK, false)
+//NTR_LoadProperty(IMP_FBX_SHAPE, false)
+//NTR_LoadProperty(IMP_FBX_GOBO, false)
+//NTR_LoadProperty(IMP_FBX_ANIMATION, true)
+//NTR_LoadProperty(IMP_FBX_GLOBAL_SETTINGS, true)
