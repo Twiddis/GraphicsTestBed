@@ -4,16 +4,5 @@
 
 namespace CayleeEngine
 {
-void System::Initialize()
-{
-
-  Enable();
-}
-
-void System::Clean()
-{
-
-  Disable();
-}
 
 }

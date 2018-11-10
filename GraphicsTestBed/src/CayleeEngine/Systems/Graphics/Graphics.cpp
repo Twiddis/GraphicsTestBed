@@ -11,5 +11,6 @@ Graphics::~Graphics()
 }
 void Graphics::Update(float dt)
 {
+  UNREFERENCED_PARAMETER(dt);
 }
 }

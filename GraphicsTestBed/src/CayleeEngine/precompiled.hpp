@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstddef>
 
+#include <iostream>
 #include <map>
 #include <memory>
 #include <string>
@@ -11,3 +12,5 @@
 
 #include <Windows.h>
 #include <d3d11.h>
+
+#include "Utils/ErrorReporting.hpp"

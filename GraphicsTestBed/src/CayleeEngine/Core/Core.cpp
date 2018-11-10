@@ -17,11 +17,12 @@ Core::~Core()
 void Core::StartSystem(std::unique_ptr<System> &system)
 {
   mSystems.push_back(std::move(system));
+  mSystems.back()->Initialize();
+  mSystems.back()->Enable();
 }
 
 void Core::Run()
 {
-
   float dt = 0.016f;
   for (auto &sys : mSystems) {
     sys->Update(dt);
