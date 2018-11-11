@@ -27,8 +27,8 @@ inline T *ResourceBase<T>::Get(ResourceID id)
   auto res = sResources.find(id);
   if (res != sResources.end())
     return res.get();
-
-  return nullptr;
+  else
+    return nullptr;
 }
 
 template<typename T>

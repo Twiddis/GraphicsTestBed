@@ -1,11 +1,18 @@
 #pragma once
 
-#define AssertFail(cond, format, ...) \
-  if(cond) {fprintf(stderr, format, __VA_ARGS__)}; assert(cond);
+namespace err
+{
+template <typename ...Args>
+void constexpr AssertFail(bool condition, const char *format, Args&& ...args);
 
-#ifdef DEBUG
-#define AssertWarn(cond, format, ...) AssertFail(cond, format, ...)
-#else
-#define AssertWarn(cond, format, ...) \
-  if(cond) {fprintf(stderr, format, __VA_ARGS__)};
-#endif
+template <typename ...Args>
+void constexpr AssertWarn(bool condition, const char *format, Args&& ...args);
+
+template <typename ...Args>
+void constexpr HRFail(HRESULT hr, const char * format, Args&& ...args);
+
+template <typename ...Args>
+void constexpr HRWarn(HRESULT hr, const char * format, Args&& ...args);
+}
+
+#include "ErrorReporting.inl"

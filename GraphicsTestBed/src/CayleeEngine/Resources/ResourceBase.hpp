@@ -7,10 +7,8 @@ typedef uint64_t ResourceID;
 class ResourceInterface
 {
 public:
-  
   ResourceInterface() : mID(0) {};
   virtual ~ResourceInterface() = 0;
-
 
 protected:
   ResourceID mID;

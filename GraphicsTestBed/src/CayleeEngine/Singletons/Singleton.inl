@@ -1,19 +1,30 @@
-#include "Singleton.hpp"
-
 namespace CayleeEngine
 {
 template <typename T>
-std::unique_ptr<T> Singleton<T>::mInstance = std::make_unique<T>();
+std::unique_ptr<T> Singleton<T>::sInstance = nullptr;
+
+template <typename T>
+template <typename ...Args>
+inline void Singleton<T>::Initialize(Args&& ...args)
+{
+  err::AssertWarn(!sInstance.get(), "WARNING: Attempted to an alreaedy instantiated singleton!");
+
+  if (!sInstance)
+    sInstance = std::make_unique<T>(args...);
+}
 
 template<typename T>
-inline Singleton<T>::~Singleton()
+constexpr void Singleton<T>::Shutdown()
 {
+  err::AssertWarn(sInstance.get(), "WARNING: Attempted to an destroy an uninitialized singleton!");
+
+  sInstance.reset();
 }
 
 template <typename T>
-inline T* Singleton<T>::GetInstance()
+constexpr T* Singleton<T>::GetInstance()
 {
-  return mInstance.get();
+  return sInstance.get();
 }
 
 }

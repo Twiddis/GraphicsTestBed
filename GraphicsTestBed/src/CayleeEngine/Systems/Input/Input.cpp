@@ -1,6 +1,9 @@
 #include "precompiled.hpp"
+#include "Input.hpp"
 
-namespace CayleeEngine
+namespace CayleeEngine::sys
 {
-
+  void Input::Update(float)
+  {
+  }
 }

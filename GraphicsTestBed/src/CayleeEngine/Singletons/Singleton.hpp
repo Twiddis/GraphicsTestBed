@@ -9,12 +9,16 @@ class Singleton
 {
 public:
   inline Singleton() = default;
-  ~Singleton();
+  ~Singleton() = default;
   
-  inline static T* GetInstance();
+  template <typename ...Args>
+  static inline void Initialize(Args &&... args);
+
+  static constexpr void Shutdown();
+  static constexpr T* GetInstance();
 
 private:
-  static std::unique_ptr<T> mInstance;
+  static std::unique_ptr<T> sInstance;
 };
 
 }

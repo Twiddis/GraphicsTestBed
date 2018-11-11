@@ -1,6 +1,6 @@
 #pragma once
 #include "Systems/System.hpp"
-namespace CayleeEngine
+namespace CayleeEngine::sys
 {
 class Graphics : public System
 {
@@ -9,6 +9,7 @@ public:
   ~Graphics();
 
   void Update(float dt);
+
 private:
 
 };
