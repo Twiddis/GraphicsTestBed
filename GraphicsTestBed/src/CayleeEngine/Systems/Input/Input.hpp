@@ -10,6 +10,7 @@ public:
   ~Input() = default;
 
   void Update(float dt);
+
 private:
 };
 }

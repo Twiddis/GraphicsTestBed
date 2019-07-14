@@ -22,7 +22,7 @@ newaction {
   description = "clean the build",
   execute     = function ()
     print("cleaning the build...")
-    local removed = RemoveDirs(".\\project_*") + RemoveDirs(".\\bin_Debug*") + RemoveDirs(".\\bin_Release*")
+    local removed = RemoveDirs(".\\project_*") + RemoveDirs(".\\bin*")
     os.rmdir(".\\.vs")
     printf("done. %d files removed", removed)
   end
@@ -104,7 +104,7 @@ workspace "GraphicsTestBed"
     pchheader "precompiled.hpp"
     pchsource(SourceDir .. "precompiled.cpp")
 
-    includedirs { SourceDir }
+    includedirs { SourceDir, "./dep/inc" }
     libdirs { "./dep/lib" }
 
     links {
@@ -112,38 +112,40 @@ workspace "GraphicsTestBed"
       "d3dcompiler",
       "/LZ4/%{cfg.platform}_%{cfg.buildcfg}/liblz4_static",
       "/DirectXTK/%{cfg.platform}_%{cfg.buildcfg}/DirectXTK",
-      "/FBX/%{cfg.platform}_%{cfg.buildcfg}/libfbxsdk"
+      "/FBX/%{cfg.platform}_%{cfg.buildcfg}/libfbxsdk",
+      "/Assimp/%{cfg.platform}_%{cfg.buildcfg}/assimp-vc141-mt"
     }
 
     prebuildcommands {}
     postbuildcommands {
-      "copy ..\\dep\\lib\\FBX\\%{cfg.platform}_%{cfg.buildcfg}\\libfbxsdk.dll ..\\bin_%{cfg.platform}_%{cfg.buildcfg}\\"
+      "copy ..\\dep\\lib\\FBX\\%{cfg.platform}_%{cfg.buildcfg}\\libfbxsdk.dll ..\\bin_%{cfg.platform}_%{cfg.buildcfg}\\",
+      "copy ..\\dep\\lib\\Assimp\\%{cfg.platform}_%{cfg.buildcfg}\\assimp-vc141-mt.dll ..\\bin_%{cfg.platform}_%{cfg.buildcfg}\\"
     }
 
-  --  filter "platforms:x86"
-  --    links {}
+    filter "platforms:x86"
+      links {}
 
-  --    filter "configurations:Debug"
-  --    filter {}
+      filter "configurations:Debug"
+      filter {}
 
-  --    filter "configurations:Release"
-  --    filter {}
+      filter "configurations:Release"
+      filter {}
 
-  --    postbuildcommands {}
+      postbuildcommands {}
 
-  --  filter {}
+    filter {}
 
-  --  filter "platforms:x64"
-  --    links {}
+    filter "platforms:x64"
+      links {}
 
-  --    filter "configurations:Debug"
-  --    filter {}
+      filter "configurations:Debug"
+      filter {}
 
-  --    filter "configurations:Release"
-  --    filter {}
+      filter "configurations:Release"
+      filter {}
 
-  --    postbuildcommands {}
-  --  filter {}
+      postbuildcommands {}
+    filter {}
 
   -------------------------------
   -- [ FBX Loader ] --

@@ -1,33 +1,58 @@
 #pragma once
+#include "ResourceID.h"
 
 namespace CayleeEngine::res
 {
-typedef uint64_t ResourceID;
 
+/*!*****************************************************************************
+  Lowest level of resource. Contains all common functionality that
+  does not require specific typename information of instatiated types.
+*******************************************************************************/
 class ResourceInterface
 {
 public:
-  ResourceInterface() : mID(0) {};
-  virtual ~ResourceInterface() = 0;
+  ResourceInterface() {};
+  virtual ~ResourceInterface() {};
 
-protected:
-  ResourceID mID;
+private:
 };
 
+/*!*****************************************************************************
+  Base class for resources. Statically contains templated container.
+*******************************************************************************/
 template <typename T>
 class ResourceBase : public ResourceInterface
 {
 public:
+  ResourceBase();
+  virtual ~ResourceBase();
+  
+  class Key
+  {
+  public:
+    Key(const ResourceID &id) : mID(id) {}
+    Key(const Key &rhs) : mID(rhs.mID) {}
 
-  inline static ResourceID Create();
+    Key& operator=(const Key& rhs) { mID = rhs.mID; }
+    operator ResourceID() const { return Key(ResourceID); }
+    
+    T* operator->() { return T::Get(mID); }
+     
+  private:
+    ResourceID mID;
+  };
+
+  template <typename... Args>
+  inline static const ResourceID& Create(Args&&...args);
+
+protected:
   inline static T* Get(ResourceID id);
   inline void Destroy();
 
 private:
-  static std::vector<ResourceID> sFreeIDs;
   static std::unordered_map<ResourceID, std::unique_ptr<T>> sResources;
 };
 
-}
+} // CayleeEngine::res
 
 #include "ResourceBase.inl"

@@ -2,16 +2,6 @@
 #include "D3D.hpp"
 
 #include "Singletons/Window/Window.hpp"
-ID3D11Device *mDevice;
-ID3D11DeviceContext *mDeviceContext;
-
-IDXGISwapChain *mSwapChain;
-ID3D11RenderTargetView *mRenderTargetView;
-ID3D11Texture2D *mDepthStencilBuffer;
-ID3D11DepthStencilState *mDepthStencilState;
-ID3D11DepthStencilView *mDepthStencilView;
-ID3D11RasterizerState *mRasterizerState;
-ID3D11BlendState *mBlendState;
 
 namespace CayleeEngine
 {
@@ -81,10 +71,14 @@ void D3D::InitializeDirectX()
   creation_flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
+  ID3D11Device *device = nullptr;
+  ID3D11DeviceContext *device_context = nullptr;
+  IDXGISwapChain *swap_chain = nullptr;
+
   for (unsigned i = 0; i < total_driver_types; ++i) {
     hr = D3D11CreateDeviceAndSwapChain(0, driver_types[i], 0, creation_flags, feature_levels,
-      total_feature_levels, D3D11_SDK_VERSION, &sd, &mSwapChain,
-      &mDevice, &mFeatureLevel, &mDeviceContext);
+      total_feature_levels, D3D11_SDK_VERSION, &sd, &swap_chain,
+      &device, &mFeatureLevel, &device_context);
 
     if (SUCCEEDED(hr)) {
       mDriverType = driver_types[i];
@@ -93,6 +87,10 @@ void D3D::InitializeDirectX()
   }
 
   err::HRFail(hr, "ERROR: Failed to create the Direct3D Device!");
+
+  mDevice.reset(device);
+  mDeviceContext.reset(device_context);
+  mSwapChain.reset(swap_chain);
 }
 
 void D3D::CreateRenderTargetView()
@@ -109,10 +107,13 @@ void D3D::CreateRenderTargetView()
   desc.Format = sd.BufferDesc.Format;
   desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
 
-  err::HRFail(mDevice->CreateRenderTargetView(back_buffer_texture, &desc, &mRenderTargetView),
+  ID3D11RenderTargetView *render_target_view = nullptr;
+
+  err::HRFail(mDevice->CreateRenderTargetView(back_buffer_texture, &desc, &render_target_view),
               "ERROR: Failed to create the Render Target View");
 
   SafeRelease(back_buffer_texture);
+  mRenderTargetView.reset(render_target_view);
 }
 
 void D3D::CreateRasterizerState()
@@ -130,10 +131,13 @@ void D3D::CreateRasterizerState()
   desc.ScissorEnable = false;
   desc.SlopeScaledDepthBias = 0.0f;
 
-  err::HRFail(mDevice->CreateRasterizerState(&desc, &mRasterizerState), 
-              "Unable to Create Rasterizer State");
+  ID3D11RasterizerState *rasterizer_state = nullptr;
 
-  mDeviceContext->RSSetState(mRasterizerState);
+  err::HRFail(mDevice->CreateRasterizerState(&desc, &rasterizer_state),
+              "Unable to Create Rasterizer State");
+  
+  mDeviceContext->RSSetState(rasterizer_state);
+  mRasterizerState.reset(rasterizer_state);
 }
 
 void D3D::CreateDepthStencilState()
@@ -160,10 +164,15 @@ void D3D::CreateDepthStencilState()
   desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
   desc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-  err::HRFail(mDevice->CreateDepthStencilState(&desc, &mDepthStencilState), 
+
+  ID3D11DepthStencilState *depth_stencil_state = nullptr;
+
+  err::HRFail(mDevice->CreateDepthStencilState(&desc, &depth_stencil_state),
               "ERROR: Unable to Create Depth Stencil State");
  
-  mDeviceContext->OMSetDepthStencilState(mDepthStencilState, 1);
+  mDeviceContext->OMSetDepthStencilState(depth_stencil_state, 1);
+
+  mDepthStencilState.reset(depth_stencil_state);
 }
 
 void D3D::CreateDepthBuffer()
@@ -182,8 +191,12 @@ void D3D::CreateDepthBuffer()
   desc.CPUAccessFlags = 0;
   desc.MiscFlags = 0;
 
-  err::HRFail(mDevice->CreateTexture2D(&desc, NULL, &mDepthStencilBuffer), 
+  ID3D11Texture2D *depth_stencil_buffer = nullptr;
+
+  err::HRFail(mDevice->CreateTexture2D(&desc, NULL, &depth_stencil_buffer),
               "ERROR: Unable To Create Depth Stencil Buffer");
+
+  mDepthStencilBuffer.reset(depth_stencil_buffer);
 }
 
 void D3D::CreateDepthStencilView()
@@ -193,8 +206,11 @@ void D3D::CreateDepthStencilView()
   desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
   desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
   desc.Texture2D.MipSlice = 0;
-  
-  err::HRFail(mDevice->CreateDepthStencilView(mDepthStencilBuffer, &desc, &mDepthStencilView), 
+  desc.Flags = 0;
+
+  ID3D11DepthStencilView *depth_stencil_view = nullptr;
+
+  err::HRFail(mDevice->CreateDepthStencilView(mDepthStencilBuffer.get(), &desc, &depth_stencil_view),
               "ERROR: Unable To Create Depth Stencil View");
 }
 
@@ -216,10 +232,14 @@ void D3D::CreateBlendState()
     desc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
   }
 
-  err::HRFail(mDevice->CreateBlendState(&desc, &mBlendState), 
+  ID3D11BlendState *blend_state = nullptr;
+
+  err::HRFail(mDevice->CreateBlendState(&desc, &blend_state),
               "ERROR: Unable to Create Blend State");
 
-  mDeviceContext->OMSetBlendState(mBlendState, NULL, 0xFFFFFFFF);
+  mDeviceContext->OMSetBlendState(blend_state, NULL, 0xFFFFFFFF);
+  
+  mBlendState.reset(blend_state);
 }
 
 void D3D::SetViewport()
