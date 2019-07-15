@@ -10,9 +10,21 @@ public:
   ResourceID& operator=(const ResourceID &rhs);
   bool operator==(const ResourceID &rhs);
 
-private:
   static constexpr size_t ID_SIZE = 128;
-
-  static unsigned char GenerateByte();
   unsigned char mBytes[ID_SIZE];
+
+private:
+  static unsigned char GenerateByte();
 };
+
+namespace std
+{
+  template <>
+  struct hash<ResourceID>
+  {
+    std::size_t operator()(const ResourceID &id) const
+    {
+      return hash<unsigned char>()(mBytes[0]);
+    }
+  }
+}

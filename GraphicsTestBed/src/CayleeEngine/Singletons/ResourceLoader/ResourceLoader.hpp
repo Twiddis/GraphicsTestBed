@@ -10,9 +10,7 @@ public:
   ResourceLoader();
   ~ResourceLoader();
 
-  void Update(float dt);
-
-  void LoadModel();
+  void LoadModel(const std::string &filepath);
 
 private:
   void LoadAllResources();

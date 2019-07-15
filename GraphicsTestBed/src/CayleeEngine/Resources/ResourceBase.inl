@@ -17,7 +17,7 @@ inline const ResourceID& ResourceBase<T>::Create(Args&&... args)
   ResourceID resource_id;
   resource_id.GenerateNewID();
 
-  sResources.emplace(resource_id, std::make_unique<T>(args));
+  sResources.emplace(resource_id, std::make_unique<T>(args...));
   return resource_id;
 }
 
@@ -26,7 +26,7 @@ inline T* ResourceBase<T>::Get(ResourceID id)
 {
   auto res = sResources.find(id);
   if (res != sResources.end())
-    return res.get();
+    return res->second.get();
   else
     return nullptr;
 }

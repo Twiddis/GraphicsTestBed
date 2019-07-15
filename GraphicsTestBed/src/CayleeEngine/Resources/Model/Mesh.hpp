@@ -1,5 +1,6 @@
 #pragma once
 #include "Resources/ResourceBase.hpp"
+#include "Assimp/scene.h"
 
 namespace CayleeEngine::res
 {
@@ -25,7 +26,6 @@ public:
   template <typename T>
   inline void AppendData(VertexAttributeType attribute_type, const T &element);
 
-private:
   std::vector<Vec3> mPositions;
   std::vector<Vec3> mNormals;
   std::vector<Vec2> mUVs;
