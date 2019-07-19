@@ -1,6 +1,8 @@
 #include "precompiled.hpp"
 #include "Window.hpp"
 
+#include "Singletons/InputManager/InputManager.hpp"
+
 // Statically Defined Constants
 static const LPCSTR gWindowName = "CayleeEngine";
 
@@ -13,7 +15,7 @@ Window::Window()
     WNDCLASSEX wc;
 
     wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-    wc.lpfnWndProc = WndProc;
+    wc.lpfnWndProc = &InputManager::WndProc;
     wc.cbClsExtra = 0;
     wc.cbWndExtra = 0;
     wc.hInstance = GetModuleHandle(NULL);
@@ -46,16 +48,5 @@ Window::~Window()
 {
 
 }
-LRESULT Window::WndProc(HWND hwnd, UINT msg, WPARAM WParam, LPARAM LParam)
-{
-  switch (msg)
-  {
-  case WM_DESTROY:
-    std::abort();
-  default:
-    break;
-  }
 
-  return DefWindowProc(hwnd, msg, WParam, LParam);
-}
 }

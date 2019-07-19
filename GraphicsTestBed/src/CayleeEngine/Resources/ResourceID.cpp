@@ -12,7 +12,7 @@ ResourceID& ResourceID::operator=(const ResourceID & rhs)
   return *this;
 }
 
-bool ResourceID::operator==(const ResourceID &rhs)
+bool ResourceID::operator==(const ResourceID &rhs) const
 {
   return std::equal(mBytes, mBytes + ID_SIZE, rhs.mBytes);
 }

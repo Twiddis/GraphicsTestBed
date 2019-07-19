@@ -12,7 +12,7 @@ inline ResourceBase<T>::~ResourceBase() { }
 
 template <typename T>
 template <typename... Args>
-inline const ResourceID& ResourceBase<T>::Create(Args&&... args)
+inline ResourceID ResourceBase<T>::Create(Args&&... args)
 {
   ResourceID resource_id;
   resource_id.GenerateNewID();

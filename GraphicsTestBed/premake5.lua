@@ -119,16 +119,17 @@ workspace "GraphicsTestBed"
     prebuildcommands {}
     postbuildcommands {
       "copy ..\\dep\\lib\\FBX\\%{cfg.platform}_%{cfg.buildcfg}\\libfbxsdk.dll ..\\bin_%{cfg.platform}_%{cfg.buildcfg}\\",
-      "copy ..\\dep\\lib\\Assimp\\%{cfg.platform}_%{cfg.buildcfg}\\assimp-vc141-mt.dll ..\\bin_%{cfg.platform}_%{cfg.buildcfg}\\"
     }
 
     filter "platforms:x86"
       links {}
 
       filter "configurations:Debug"
+        postbuildcommands {"copy ..\\dep\\lib\\Assimp\\%{cfg.platform}_%{cfg.buildcfg}\\assimp-vc141-mtd.dll ..\\bin_%{cfg.platform}_%{cfg.buildcfg}\\" }
       filter {}
 
       filter "configurations:Release"
+        postbuildcommands {"copy ..\\dep\\lib\\Assimp\\%{cfg.platform}_%{cfg.buildcfg}\\assimp-vc141-mt.dll ..\\bin_%{cfg.platform}_%{cfg.buildcfg}\\" }
       filter {}
 
       postbuildcommands {}
@@ -139,9 +140,11 @@ workspace "GraphicsTestBed"
       links {}
 
       filter "configurations:Debug"
+        postbuildcommands {"copy ..\\dep\\lib\\Assimp\\%{cfg.platform}_%{cfg.buildcfg}\\assimp-vc141-mtd.dll ..\\bin_%{cfg.platform}_%{cfg.buildcfg}\\" }
       filter {}
 
       filter "configurations:Release"
+        postbuildcommands {"copy ..\\dep\\lib\\Assimp\\%{cfg.platform}_%{cfg.buildcfg}\\assimp-vc141-mt.dll ..\\bin_%{cfg.platform}_%{cfg.buildcfg}\\" }
       filter {}
 
       postbuildcommands {}

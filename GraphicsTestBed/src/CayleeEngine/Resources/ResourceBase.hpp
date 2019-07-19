@@ -43,7 +43,7 @@ public:
   };
 
   template <typename... Args>
-  inline static const ResourceID& Create(Args&&...args);
+  inline static ResourceID Create(Args&&...args);
 
 protected:
   inline static T* Get(ResourceID id);

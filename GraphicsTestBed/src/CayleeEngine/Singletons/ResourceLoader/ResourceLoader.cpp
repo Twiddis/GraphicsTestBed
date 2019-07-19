@@ -6,6 +6,10 @@
 #include "Resources/Model/Model.hpp"
 #include "Singletons/D3D/D3D.hpp"
 
+namespace
+{
+  const std::string RESOURCE_PATH = "../res/";
+}
 namespace CayleeEngine::sys
 {
   ResourceLoader::ResourceLoader() : mAssimpImporter(nullptr)
@@ -24,12 +28,13 @@ namespace CayleeEngine::sys
 
   void ResourceLoader::LoadModels()
   {
+    LoadModel(RESOURCE_PATH + "standford_bunny.fbx");
   }
 
   void ResourceLoader::LoadModel(const std::string &filepath)
   {
     const aiScene *scene = mAssimpImporter->ReadFile(filepath, aiProcessPreset_TargetRealtime_Fast);
-    err::AssertWarn(scene, "Warning: Could not load model from file %s", filepath);
+    err::AssertWarn(scene, "Warning: Could not load model from file %s", filepath.c_str());
 
     if (!scene)
       return;
@@ -53,5 +58,7 @@ namespace CayleeEngine::sys
           new_mesh->mUVs.push_back(Vec2(UVs[j].x, UVs[j].y));
       }
     }
+
+    mAssimpImporter->FreeScene();
   }
 }

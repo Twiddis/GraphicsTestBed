@@ -13,7 +13,7 @@ inline void Singleton<T>::Initialize(Args&& ...args)
     sInstance = std::make_unique<T>(args...);
 }
 
-template<typename T>
+template <typename T>
 constexpr void Singleton<T>::Shutdown()
 {
   err::AssertWarn(sInstance.get(), "WARNING: Attempted to an destroy an uninitialized singleton!");

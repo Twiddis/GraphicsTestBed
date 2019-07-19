@@ -18,9 +18,9 @@ Graphics::~Graphics()
   Window::Shutdown();
 }
 
-void Graphics::Update(float dt)
+void Graphics::Update(float)
 {
-  Window::GetInstance();
-  UNREFERENCED_PARAMETER(dt);
+  
+  D3D::GetInstance()->mSwapChain->Present(0, 0);
 }
 }

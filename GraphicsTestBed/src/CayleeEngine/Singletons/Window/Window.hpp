@@ -17,8 +17,6 @@ public:
   HWND GetWindowHandle() const { return mWindowHandle; }
 
 private:
-  static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM WParam, LPARAM LParam);
-
   HWND mWindowHandle;
 
   int mScreenWidth;
