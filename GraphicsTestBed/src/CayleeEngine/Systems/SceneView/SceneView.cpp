@@ -19,7 +19,14 @@ SceneView::~SceneView()
   ResourceLoader::Shutdown();
 }
 
+void SceneView::StartFrame()
+{
+}
+
 void SceneView::Update(float)
+{
+}
+void SceneView::EndFrame()
 {
 }
 }

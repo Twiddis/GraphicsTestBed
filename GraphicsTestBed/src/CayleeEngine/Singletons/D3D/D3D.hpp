@@ -9,6 +9,9 @@ public:
   D3D();
   ~D3D();
 
+  void BindRenderTarget();
+  void ClearRenderTarget();
+
 private:
   void InitializeDirectX();
 

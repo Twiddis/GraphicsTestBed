@@ -92,6 +92,7 @@ workspace "GraphicsTestBed"
       SourceDir .. "**.inl",
       SourceDir .. "**.vert",
       SourceDir .. "**.pixel",
+      SourceDir .. "**.hlsl",
       SourceDir .. "**.md"
     }
 
@@ -109,6 +110,10 @@ workspace "GraphicsTestBed"
     filter {}
 
     filter { "files:**.pixel" }
+      flags {"ExcludeFromBuild"}
+    filter {}
+
+    filter { "files:**.hlsl" }
       flags {"ExcludeFromBuild"}
     filter {}
 

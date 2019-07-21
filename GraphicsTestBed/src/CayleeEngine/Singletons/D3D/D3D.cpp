@@ -31,6 +31,19 @@ D3D::~D3D()
   SafeRelease(mBlendState);
 }
 
+void D3D::BindRenderTarget()
+{
+  mDeviceContext->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
+  mDeviceContext->OMSetDepthStencilState(mDepthStencilState, 0xFF);
+}
+
+void D3D::ClearRenderTarget()
+{
+  const float clear_color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+  mDeviceContext->ClearRenderTargetView(mRenderTargetView, clear_color);
+  mDeviceContext->ClearDepthStencilView(mDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+}
+
 void D3D::InitializeDirectX()
 {
   // Specify Drivers and Features

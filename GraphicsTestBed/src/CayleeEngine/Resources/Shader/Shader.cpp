@@ -13,6 +13,42 @@ Shader::~Shader()
 {
 }
 
+void Shader::SearchAndAssignBuffers(const std::wstring &filepath)
+{
+  std::ifstream in_file(filepath);
+  std::stringstream str_stream;
+
+  str_stream << in_file.rdbuf();
+  std::string file_buffer = str_stream.str();
+
+  size_t search_pos = 0;
+  size_t search_end = 0;
+  size_t buffer_id = 0;
+  const std::string search = "#include \"../ConstantBuffers/";
+
+  do
+  {
+    search_pos = file_buffer.find(search, search_end);
+    if (search_pos == std::string::npos)
+      break;
+
+    search_pos += search.length();
+    search_end = file_buffer.find('\"', search_pos);
+
+    std::string buffer_name = file_buffer.substr(search_pos, search_end - search_pos);
+    AssignBuffer(buffer_id++, res::D3DBuffer::FindBufferWIthName(buffer_name));
+  }
+  while (true);
+}
+
+void Shader::AssignBuffer(size_t slot, res::D3DBuffer::Key buffer)
+{
+  if (buffer.IsValid())
+    mAssignedBuffers.insert_or_assign(slot, buffer);
+
+  err::AssertWarn(buffer.IsValid(), "WARNING: Attempted to assign a buffer that is not valid");
+}
+
 HRESULT Shader::CompileShader(const std::wstring &filepath, const char *profile, ID3DBlob **blob)
 {
   *blob = nullptr;

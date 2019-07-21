@@ -11,7 +11,9 @@ public:
   SceneView();
   ~SceneView();
 
+  void StartFrame();
   void Update(float dt);
+  void EndFrame();
 
 private:
   std::vector<res::Model::Key> mModels;

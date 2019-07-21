@@ -8,7 +8,9 @@ public:
   Graphics();
   ~Graphics();
 
+  void StartFrame();
   void Update(float dt);
+  void EndFrame();
 
 private:
 

@@ -13,7 +13,6 @@ public:
   ~VertexShader();
 
   void LoadShader(const std::wstring &filepath) override;
-
   void Bind() override;
 
   static ResourceID Create();

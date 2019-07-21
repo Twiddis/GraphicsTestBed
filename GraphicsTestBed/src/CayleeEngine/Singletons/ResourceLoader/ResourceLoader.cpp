@@ -15,6 +15,7 @@ namespace
 {
   const std::string RESOURCE_PATH = "../res/";
   const std::string SHADER_PATH = "../src/CayleeEngine/Shaders/";
+  const std::string CONSTANT_BUFFER_PATH = SHADER_PATH + "ConstantBuffers/";
 
   namespace FileExtensions
   {
@@ -28,6 +29,7 @@ namespace CayleeEngine::sys
 ResourceLoader::ResourceLoader() : mAssimpImporter(nullptr)
 {
   mAssimpImporter = std::make_unique<Assimp::Importer>();
+  LoadAllConstantBuffers();
 }
 
 ResourceLoader::~ResourceLoader()
@@ -110,6 +112,10 @@ res::ShaderPipe::Key ResourceLoader::LoadShaderProgram(const std::string &folder
     res::VertexShader::Key vertex_shader = res::VertexShader::Create();
     vertex_shader->LoadShader(vertex_path);
 
+    //
+    vertex_shader->SearchAndAssignBuffers(vertex_path);
+    //
+
     if (!vertex_shader.IsValid()) {
       err::AssertWarn(false, "Warning! Unable to create vertex shader: %S", vertex_path.c_str());
       vertex_shader.Destroy();
@@ -121,7 +127,10 @@ res::ShaderPipe::Key ResourceLoader::LoadShaderProgram(const std::string &folder
   if (b_pixel) {
     res::PixelShader::Key pixel_shader = res::PixelShader::Create();
     pixel_shader->LoadShader(pixel_path);
-
+    
+    //
+    pixel_shader->SearchAndAssignBuffers(pixel_path);
+    //
     if (!pixel_shader.IsValid()) {
       err::AssertWarn(false, "Warning! Unable to create vertex shader: %S", pixel_path.c_str());
       pixel_shader.Destroy();
@@ -131,6 +140,37 @@ res::ShaderPipe::Key ResourceLoader::LoadShaderProgram(const std::string &folder
   }
 
   return shader_pipe;
+}
+
+res::D3DBuffer::Key ResourceLoader::LoadConstantBuffer(const std::string &filepath)
+{
+  std::ifstream in_file(filepath);
+  std::stringstream str_stream;
+
+  str_stream << in_file.rdbuf();
+  std::string file_buffer = str_stream.str();
+
+  const std::string search = "// byte_width: ";
+  size_t search_pos = file_buffer.find(search) + search.length();
+  size_t search_end = file_buffer.find('\n', search_pos);
+
+  std::string found = file_buffer.substr(search_pos, search_end - search_pos);
+
+  size_t filename_pos = filepath.find_last_of("/") + 1;
+  std::string filename = filepath.substr(filename_pos);
+
+  return res::D3DBuffer::Create(filename, std::stoi(found));
+}
+
+void ResourceLoader::LoadAllConstantBuffers()
+{
+  for (auto &file : fs::recursive_directory_iterator(CONSTANT_BUFFER_PATH))
+  {
+    if (file.path().extension() == ".hlsl") {
+      res::D3DBuffer::Key buffer = LoadConstantBuffer(file.path().string());
+      mConstantBuffers.emplace(file.path().filename().string(), buffer);
+    }
+  }
 }
 
 }

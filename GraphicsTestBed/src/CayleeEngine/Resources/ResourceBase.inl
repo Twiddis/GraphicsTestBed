@@ -18,6 +18,9 @@ inline ResourceID ResourceBase<T>::Create(Args&&... args)
   resource_id.GenerateNewID();
 
   sResources.emplace(resource_id, std::make_unique<T>(args...));
+  
+  auto it = sResources.find(resource_id);
+  it->second.get()->mID = resource_id;
   return resource_id;
 }
 

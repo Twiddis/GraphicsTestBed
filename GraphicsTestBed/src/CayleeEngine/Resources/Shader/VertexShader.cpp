@@ -117,12 +117,16 @@ void VertexShader::LoadShader(const std::wstring &filepath)
 void VertexShader::Bind()
 {
   if (!mIsBuilt) {
-    err::AssertWarn(false, "Warning! Attempted to bind unbuilt vertex shader");
+    err::AssertWarn(false, "WARNING: Attempted to bind unbuilt vertex shader");
     return;
   }
 
   D3D::GetInstance()->mDeviceContext->IASetInputLayout(mInputLayout);
   D3D::GetInstance()->mDeviceContext->VSSetShader(mVertexShader, NULL, 0);
+
+  for (auto &it : mAssignedBuffers) {
+    D3D::GetInstance()->mDeviceContext->VSSetConstantBuffers(it.first, 1, it.second->GetBuffer());
+  }
 }
 
 ResourceID VertexShader::Create()
