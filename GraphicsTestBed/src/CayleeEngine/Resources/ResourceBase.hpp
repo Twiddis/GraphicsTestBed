@@ -1,6 +1,9 @@
 #pragma once
 #include "ResourceID.h"
 
+// NOTE:
+// Consider making every resource bindable, buildable, and check if built.
+
 namespace CayleeEngine::res
 {
 
@@ -30,14 +33,21 @@ public:
   class Key
   {
   public:
+    Key() : mID() {}
     Key(const ResourceID &id) : mID(id) {}
     Key(const Key &rhs) : mID(rhs.mID) {}
 
-    Key& operator=(const Key& rhs) { mID = rhs.mID; }
-    operator ResourceID() const { return Key(ResourceID); }
+    Key& operator=(const Key& rhs) { mID = rhs.mID; return *this; }
     
+    operator ResourceID() const { return mID; }
+    operator bool() const { return T::Get(mID) ? true : false; }
+
+    bool IsValid() const { return T::Get(mID) ? true : false; }
+
     T* operator->() { return T::Get(mID); }
-     
+
+    inline void Destroy() { T::sResources.erase(mID); }
+
   private:
     ResourceID mID;
   };
@@ -47,10 +57,9 @@ public:
 
 protected:
   inline static T* Get(ResourceID id);
-  inline void Destroy();
+  static std::unordered_map<ResourceID, std::unique_ptr<T>> sResources;
 
 private:
-  static std::unordered_map<ResourceID, std::unique_ptr<T>> sResources;
 };
 
 } // CayleeEngine::res

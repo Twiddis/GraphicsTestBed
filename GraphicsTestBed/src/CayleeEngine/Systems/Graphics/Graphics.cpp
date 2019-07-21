@@ -20,7 +20,6 @@ Graphics::~Graphics()
 
 void Graphics::Update(float)
 {
-  
   D3D::GetInstance()->mSwapChain->Present(0, 0);
 }
 }

@@ -13,6 +13,8 @@ void constexpr HRFail(HRESULT hr, const char * format, Args&& ...args);
 
 template <typename ...Args>
 void constexpr HRWarn(HRESULT hr, const char * format, Args&& ...args);
+
+void PrintLastWindowsError();
 }
 
 #include "ErrorReporting.inl"

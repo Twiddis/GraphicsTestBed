@@ -5,9 +5,12 @@
 #include <cstddef>
 
 #include <iostream>
+#include <fstream>
+#include <istream>
 #include <map>
 #include <memory>
 #include <string>
+#include <sstream>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>

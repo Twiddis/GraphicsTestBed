@@ -13,7 +13,8 @@ static bool HRCheck(HRESULT hr)
   _com_error error(hr);
   LPCTSTR msg = error.ErrorMessage();
   
-  std::cerr << "HResult: " << msg << " ";
+  std::cerr << "HResult: " << msg << " " << std::endl;
+  PrintLastWindowsError();
 
   return false;
 }
@@ -23,6 +24,7 @@ void constexpr AssertFail(bool condition, const char *format, Args&& ...args)
 {
   if (!condition) {
     fprintf(stderr, format, args...);
+    std::cerr << std::endl;
     assert(condition);
   }
 }
@@ -33,8 +35,10 @@ void constexpr AssertWarn(bool condition, const char *format, Args&& ...args)
 #ifdef DEBUG
   AssertFail(condition, format, args...);
 #else
-  if (!condition)
+  if (!condition) {
+    std::cerr << std::endl;
     fprintf(stderr, format, args...);
+  }
 #endif
 }
 

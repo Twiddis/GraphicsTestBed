@@ -8,16 +8,23 @@ class Shader : public ResourceBase<Shader>
 {
 public:
   Shader();
-  ~Shader();
+  virtual ~Shader();
+
+  enum Type
+  {
+    Vertex,
+    Pixel,
+    Compute,
+    COUNT
+  };
   
   virtual void LoadShader(const std::wstring &filepath) = 0;
-
   virtual void Bind() = 0;
+
+  bool IsBuilt() { return mIsBuilt; }
 
 protected:
   static HRESULT CompileShader(const std::wstring &filepath, const char *profile, ID3DBlob **blob);
-  
-  virtual void Build() = 0;
 
   bool mIsBuilt;
 };

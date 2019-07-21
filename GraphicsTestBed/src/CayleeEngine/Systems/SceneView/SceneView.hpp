@@ -8,8 +8,8 @@ namespace CayleeEngine::sys
 class SceneView : public System
 {
 public:
-  SceneView() = default;
-  ~SceneView() = default;
+  SceneView();
+  ~SceneView();
 
   void Update(float dt);
 

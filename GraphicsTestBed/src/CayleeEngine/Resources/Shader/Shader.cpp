@@ -29,7 +29,8 @@ HRESULT Shader::CompileShader(const std::wstring &filepath, const char *profile,
 
   if (FAILED(hr))
   {
-    err::AssertWarn(true, "Unable to compile shader %S", filepath.c_str());
+    err::AssertWarn(false, "Unable to compile shader %S, %s", filepath.c_str(), error_blob->GetBufferPointer());
+    err::PrintLastWindowsError();
 
     SafeRelease(error_blob);
     SafeRelease(shader_blob);

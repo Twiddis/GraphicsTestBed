@@ -1,0 +1,7 @@
+#include "../InputLayouts/default.hlsl"
+
+
+float4 main(VertexOut vin) : SV_TARGET
+{
+  return float4(0.0f, 0.25f, 0.75f, 1.0f);
+}

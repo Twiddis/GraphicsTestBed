@@ -1,6 +1,8 @@
 #include "precompiled.hpp"
 #include "Core/Core.hpp"
+
 #include "Singletons/InputManager/InputManager.hpp"
+
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
@@ -10,6 +12,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
   CayleeEngine::Core core;
 
   core.StartSystem<CayleeEngine::sys::Graphics>();
+  core.StartSystem<CayleeEngine::sys::SceneView>();
 
   core.Run();
   

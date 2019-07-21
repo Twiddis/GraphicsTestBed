@@ -13,6 +13,8 @@ public:
   void LoadShader(const std::wstring &filepath) override;
   void Bind() override;
 
+  static ResourceID Create();
+
 private:
   ID3D11PixelShader *mPixelShader;
 

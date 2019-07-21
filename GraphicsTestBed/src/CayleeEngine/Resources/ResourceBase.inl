@@ -30,13 +30,4 @@ inline T* ResourceBase<T>::Get(ResourceID id)
   else
     return nullptr;
 }
-
-template <typename T>
-inline void ResourceBase<T>::Destroy()  
-{
-  sResources.erase(mID);
-}
-
-
-
 }

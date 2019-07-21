@@ -10,6 +10,8 @@ public:
   Model();
   ~Model();
 
+  void AppendMesh(Mesh::Key mesh) { mMeshes.push_back(mesh); };
+
 private:
   std::vector<Mesh::Key> mMeshes;
 };

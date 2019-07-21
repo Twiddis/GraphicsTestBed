@@ -90,6 +90,9 @@ workspace "GraphicsTestBed"
       SourceDir .. "**.cpp",
       SourceDir .. "**.tpp",
       SourceDir .. "**.inl",
+      SourceDir .. "**.vert",
+      SourceDir .. "**.pixel",
+      SourceDir .. "**.md"
     }
 
     -- Exclude template files from project (so they don't accidentally get compiled)
@@ -100,6 +103,19 @@ workspace "GraphicsTestBed"
     filter { "files:**.inl" }
       flags {"ExcludeFromBuild"}
     filter {}
+
+    filter { "files:**.vert" }
+      flags {"ExcludeFromBuild"}
+    filter {}
+
+    filter { "files:**.pixel" }
+      flags {"ExcludeFromBuild"}
+    filter {}
+
+    filter { "files:**.md" }
+      flags {"ExcludeFromBuild"}
+    filter {}
+
 
     pchheader "precompiled.hpp"
     pchsource(SourceDir .. "precompiled.cpp")

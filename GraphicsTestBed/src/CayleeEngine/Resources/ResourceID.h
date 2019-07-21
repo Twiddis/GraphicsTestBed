@@ -24,12 +24,12 @@ namespace std
   {
     std::size_t operator()(const ResourceID &id) const
     {
-      size_t hash_value = 0;
+      uint32_t hash_value = 0;
 
-      for (size_t i = 0; i < ResourceID::ID_SIZE; i += sizeof(size_t))
+      for (size_t i = 0; i < ResourceID::ID_SIZE; i += sizeof(uint32_t))
       {
-        size_t bytes = *reinterpret_cast<size_t*>(id.mBytes[i]);
-        hash_value = (hash_value ^ (hash<size_t>()(bytes) << 1) >> 1);
+        uint32_t bytes = *reinterpret_cast<const uint32_t*>(id.mBytes + i);
+        hash_value = (hash_value ^ (hash<uint32_t>()(bytes) << 1) >> 1);
       }
 
       return hash_value;
