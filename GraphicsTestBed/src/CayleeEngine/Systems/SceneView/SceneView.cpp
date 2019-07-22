@@ -7,6 +7,7 @@
 #include "Resources/Entity/Entity.hpp"
 #include "Resources/Camera/Camera.hpp"
 #include "Resources/ShaderResource/RenderTarget.hpp"
+#include "Resources/Texture/Texture.hpp"
 
 namespace CayleeEngine::sys
 {
@@ -27,10 +28,12 @@ static ID3D11SamplerState *gSamplerState = nullptr;
 
 
 static res::Model::Key gModelBunny;
+static res::Model::Key gModelCube;
 
+static res::Texture::Key gTextureWood;
 
 static res::Entity::Key gTestEntity;
-
+static res::Entity::Key gFloorEntity;
 
 static res::RenderTarget::Key gBuffer;
 
@@ -39,16 +42,34 @@ SceneView::SceneView()
   ResourceLoader::Initialize();
   
   gModelBunny = ResourceLoader::GetInstance()->LoadModel("stanford-bunny.fbx");
+  gModelCube = ResourceLoader::GetInstance()->LoadModel("cubeycube.fbx");
+
+  gTextureWood = res::Texture::Create(L"../res/TexturesCom_WoodFine0086_7_seamless_S.dds");
   gShaderProgramMain = ResourceLoader::GetInstance()->LoadShaderProgram("DefaultShader");
-  gCamera = res::Camera::Create();
+
   gEntityTransformBuffer = res::D3DBuffer::FindBufferWIthName("EntityTransform.hlsl");
   
+  gCamera = res::Camera::Create();
+
   gTestEntity = res::Entity::Create();
-  gTestEntity->mModel = gModelBunny;
-  gTestEntity->mShaderProgram = gShaderProgramMain;
-  gTestEntity->mPosition = Vec3(0.0f, 0.0f, 0.0f);
-  gTestEntity->mScale = Vec3(1.0f, 1.0f, 1.0);
-  gTestEntity->mRotation = Vec3(0.0f, 0.0f, 0.0f);
+  {
+    gTestEntity->mModel = gModelBunny;
+    gTestEntity->mShaderProgram = gShaderProgramMain;
+    gTestEntity->mPosition = Vec3(0.0f, 0.5f, -4.0f);
+    gTestEntity->mScale = Vec3(1.0f, 1.0f, 1.0);
+    gTestEntity->mRotation = Vec3(0.0f, 0.0f, 0.0f);
+  }
+
+  gFloorEntity = res::Entity::Create();
+  {
+    gFloorEntity->mModel = gModelCube;
+    gFloorEntity->mShaderProgram = gShaderProgramMain;
+    gFloorEntity->mTexture = gTextureWood;
+    gFloorEntity->mPosition = Vec3(0.0f, -0.5f, 0.0f);
+    gFloorEntity->mScale = Vec3(10.0f, 0.5f, 10.0);
+    gFloorEntity->mRotation = Vec3(0.0f, 0.0f, 0.0f);
+  }
+
     // Position
     // Normal
     // Diffuse
@@ -104,6 +125,11 @@ void SceneView::Update(float)
   for (auto &entity : res::Entity::GetResources()) {
     trans_buffer.model = entity.second->GetTransform().Transpose();
       
+    if (entity.second->mTexture.IsValid())
+      entity.second->mTexture->Bind(0, res::Shader::Pixel);
+    else
+      res::Texture::ClearBinding(0, res::Shader::Pixel);
+
     entity.second->mShaderProgram->Bind();
     gEntityTransformBuffer->MapData(&trans_buffer);
 
@@ -128,7 +154,6 @@ void SceneView::Input()
   mouse_tracker.Update(mouse);
   kb_tracker.Update(kb);
 
-  gCamera->ZoomIn(static_cast<float>(mouse.scrollWheelValue) * 0.001f);
 
   if (mouse_tracker.middleButton == Mouse::ButtonStateTracker::ButtonState::PRESSED)
     Mouse::Get().SetMode(Mouse::MODE_RELATIVE);
@@ -137,10 +162,12 @@ void SceneView::Input()
     Mouse::Get().SetMode(Mouse::MODE_ABSOLUTE);
   
   if (mouse_tracker.middleButton == Mouse::ButtonStateTracker::ButtonState::HELD) {
-    gCamera->PanRight(static_cast<float>(mouse.x) * 0.001f);
-    gCamera->PanUp(static_cast<float>(mouse.y) * 0.001f);
+    gCamera->PanRight(static_cast<float>(mouse.x) * 0.01f);
+    gCamera->PanUp(static_cast<float>(mouse.y) * 0.01f);
   }
-  
+  else
+    gCamera->ZoomIn(static_cast<float>(mouse.scrollWheelValue) * 0.001f);
+
   if (mouse_tracker.leftButton == Mouse::ButtonStateTracker::ButtonState::PRESSED)
     Mouse::Get().SetMode(Mouse::MODE_RELATIVE);
 

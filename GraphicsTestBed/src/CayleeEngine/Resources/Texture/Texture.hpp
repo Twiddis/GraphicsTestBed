@@ -11,7 +11,7 @@ public:
   ~Texture();
 
   void Bind(UINT slot, Shader::Type shader_stage);
-
+  static void ClearBinding(UINT slot, Shader::Type shader_stage);
 private:
   ID3D11ShaderResourceView *mShaderResourceView;
 };

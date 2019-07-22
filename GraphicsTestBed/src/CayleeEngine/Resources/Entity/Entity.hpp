@@ -3,6 +3,7 @@
 
 #include "Resources/Shader/ShaderPipe.hpp"
 #include "Resources/Model/Model.hpp"
+#include "Resources/Texture/Texture.hpp"
 
 namespace CayleeEngine::res
 {
@@ -21,6 +22,7 @@ public:
   bool mIsTransformCalculated;
 
   res::Model::Key mModel;
+  res::Texture::Key mTexture;
   res::ShaderPipe::Key mShaderProgram;
 };
 

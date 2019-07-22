@@ -11,7 +11,7 @@ VertexOut main(VertexIn vin)
   matrix mvp = mul(mv, projection);
 
   output.pos = mul(float4(vin.pos, 1.0f), mvp);
-  output.normal = mul(mv, vin.normal);
+  output.normal = mul(vin.normal, mv);
   output.uv = vin.uv;
 
   return output;

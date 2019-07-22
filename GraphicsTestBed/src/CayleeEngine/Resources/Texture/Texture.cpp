@@ -10,7 +10,7 @@ namespace CayleeEngine::res
   {
     ID3D11Device *dev = D3D::GetInstance()->mDevice;
     HRESULT hr = DirectX::CreateDDSTextureFromFile(dev, filepath, nullptr, &mShaderResourceView);
-    err::AssertWarn(hr, "WARNING: Unable to load texture %S", filepath);
+    err::HRWarn(hr, "WARNING: Unable to load texture %S", filepath);
   }
 
   Texture::~Texture() 
@@ -37,5 +37,26 @@ namespace CayleeEngine::res
       break;
     };
 
+  }
+
+  void Texture::ClearBinding(UINT slot, Shader::Type shader_stage)
+  {
+    ID3D11DeviceContext *devcon = D3D::GetInstance()->mDeviceContext;
+    ID3D11ShaderResourceView *NULL_SRV = nullptr;
+
+    switch (shader_stage)
+    {
+    case Shader::Vertex:
+      devcon->VSSetShaderResources(slot, 1, &NULL_SRV);
+      break;
+    case Shader::Pixel:
+      devcon->PSSetShaderResources(slot, 1, &NULL_SRV);
+      break;
+    case Shader::Compute:
+      devcon->CSSetShaderResources(slot, 1, &NULL_SRV);
+      break;
+    default:
+      break;
+    };
   }
 }
