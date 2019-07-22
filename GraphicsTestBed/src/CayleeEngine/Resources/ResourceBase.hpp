@@ -55,6 +55,9 @@ public:
   template <typename... Args>
   inline static ResourceID Create(Args&&...args);
 
+  static std::unordered_map<ResourceID, std::unique_ptr<T>>&
+    GetResources() { return sResources; }
+
   ResourceID mID;
 
 protected:

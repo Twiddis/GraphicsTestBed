@@ -92,7 +92,7 @@ void VertexShader::LoadShader(const std::wstring &filepath)
   std::string file_buffer = str_stream.str();
 
   const std::string search_input_layout = "#include \"../InputLayouts/";
-  size_t search_pos = file_buffer.find(search_input_layout);
+  size_t search_pos = file_buffer.find(search_input_layout) + search_input_layout.length();
   size_t search_end = file_buffer.find('\"', search_pos);
 
   std::string input_layout_filename;
@@ -102,8 +102,7 @@ void VertexShader::LoadShader(const std::wstring &filepath)
     input_layout_filename = "default.hlsl";
   }
   else {
-    input_layout_filename = file_buffer.substr(search_pos + search_input_layout.length(),
-                                               search_end - search_pos - search_input_layout.length());
+    input_layout_filename = file_buffer.substr(search_pos, search_end - search_pos);
   }
 
 
@@ -145,7 +144,7 @@ void VertexShader::CreateInputLayout(const std::string &filename, ID3DBlob *vert
   std::ifstream in_file(INPUT_LAYOUT_PATH + filename);
   std::stringstream str_stream;
 
-  err::AssertWarn(!in_file.is_open(), "Warning! Unable to open input layout for reading");
+  err::AssertWarn(in_file.is_open(), "Warning! Unable to open input layout for reading");
   if (!in_file.is_open())
     return;
 

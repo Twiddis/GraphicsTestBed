@@ -10,6 +10,7 @@ public:
   Model();
   ~Model();
 
+  void Draw();
   void AppendMesh(Mesh::Key mesh) { mMeshes.push_back(mesh); };
 
 private:

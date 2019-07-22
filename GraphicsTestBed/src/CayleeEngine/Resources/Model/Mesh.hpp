@@ -23,16 +23,20 @@ public:
     COUNT
   };
 
+  static constexpr UINT ATTRIBUTE_STRIDES[VertexAttributeType::COUNT]
+    = {sizeof(float) * 3,
+       sizeof(float) * 3,
+       sizeof(float) * 3};
+
     // Does nothing if data is null
   template <typename T>
   void CreateVertexBuffer(VertexAttributeType type,  const T *data, size_t num_elements);
+  void CreateIndexBuffer(aiFace *faces, size_t num_faces);
 
+  int mNumIndices;
 private:
-  static ID3D11Buffer *NULL_BUFFER;
-
-  ID3D11Buffer *mPositionBuffer;
-  ID3D11Buffer *mNormalBuffer;
-  ID3D11Buffer *mUVBuffer;
+  ID3D11Buffer *mIndexBuffer;
+  ID3D11Buffer* mBufferArray[VertexAttributeType::COUNT];
 
   bool mIsBuilt;
 };
@@ -42,33 +46,6 @@ inline void Mesh::CreateVertexBuffer(VertexAttributeType type, const T *data, si
 {
   if (!data)
     return;
-
-  ID3D11Buffer **buffer = &NULL_BUFFER;
-
-  switch (type)
-  {
-  case Position:
-    buffer = &mPositionBuffer;
-    break;
-  case Normal:
-    buffer = &mNormalBuffer;
-    break;
-  case UV:
-    buffer = &mUVBuffer;
-    break;
-  default:
-    break;
-  }
-
-  if (buffer == &NULL_BUFFER) {
-    err::AssertWarn(false, "Warning! Attempted to create a vertex buffer with an invalid attribute type!");
-    return;
-  }
-
-  if (*buffer) {
-    err::AssertWarn(false, "Warning! Attempted to create a vertex buffer that was already created!");
-    return;
-  }
 
   D3D11_BUFFER_DESC desc;
   {
@@ -87,7 +64,7 @@ inline void Mesh::CreateVertexBuffer(VertexAttributeType type, const T *data, si
     res_data.SysMemSlicePitch = 0;
   }
 
-  HRESULT hr = D3D::GetInstance()->mDevice->CreateBuffer(&desc, &res_data, buffer);
+  HRESULT hr = D3D::GetInstance()->mDevice->CreateBuffer(&desc, &res_data, &mBufferArray[type]);
   err::HRWarn(hr, "Warning! Unable to create a vertex buffer");
 
 }

@@ -25,7 +25,7 @@ void constexpr AssertFail(bool condition, const char *format, Args&& ...args)
   if (!condition) {
     fprintf(stderr, format, args...);
     std::cerr << std::endl;
-    assert(condition);
+      assert(condition);
   }
 }
 

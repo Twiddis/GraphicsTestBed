@@ -11,6 +11,7 @@ public:
 
   void Unbind();
 
+  void ClearRenderTarget();
   void Resize(int res_x, int res_y);
 
   void BindAsRenderTarget();

@@ -21,10 +21,10 @@ public:
   void SetRenderTargetView() {}
 
   void AttachShader(Shader::Type type, Shader::Key shader);
-  bool HasShader(Shader::Type type) { return mShaders[type]; };
+  Shader::Key GetShader(Shader::Type type) { return mShaders[type]; };
 
   void Bind();
-
+\
 private:
   Shader::Key mShaders[Shader::Type::COUNT];
 };

@@ -16,8 +16,12 @@ public:
   Vec3 mScale;
   Vec3 mRotation;
 
+  Mat& GetTransform();
+  Mat mTransform;
+  bool mIsTransformCalculated;
+
   res::Model::Key mModel;
-  res::ShaderPipe mShaderProgram;
+  res::ShaderPipe::Key mShaderProgram;
 };
 
 }

@@ -1,8 +1,6 @@
 #pragma once
 #include "Systems/System.hpp"
 
-#include "Resources/Model/Model.hpp"
-
 namespace CayleeEngine::sys
 {
 class SceneView : public System
@@ -16,8 +14,10 @@ public:
   void EndFrame();
 
 private:
-  std::vector<res::Model::Key> mModels;
-  
+  void Input();
+
+  DirectX::Mouse::ButtonStateTracker mouse_tracker;
+  DirectX::Keyboard::KeyboardStateTracker kb_tracker;
 };
 
 }

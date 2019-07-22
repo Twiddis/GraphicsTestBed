@@ -24,7 +24,11 @@
 #include "Utils/D3DSafeRelease.hpp"
 
 #include "DirectXTK/SimpleMath.h"
+#include "DirectXTK/Keyboard.h"
+#include "DirectXTK/Mouse.h"
 
 typedef DirectX::SimpleMath::Vector2 Vec2;
 typedef DirectX::SimpleMath::Vector3 Vec3;
 typedef DirectX::SimpleMath::Vector4 Vec4;
+typedef DirectX::SimpleMath::Matrix Mat;
+typedef DirectX::SimpleMath::Quaternion Quat;

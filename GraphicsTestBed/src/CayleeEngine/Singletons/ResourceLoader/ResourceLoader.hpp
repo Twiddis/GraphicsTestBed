@@ -14,7 +14,7 @@ public:
   ResourceLoader();
   ~ResourceLoader();
 
-  void LoadModel(const std::string &filepath);
+  res::Model::Key LoadModel(const std::string &filepath);
   res::ShaderPipe::Key LoadShaderProgram(const std::string &foldername);
   res::D3DBuffer::Key LoadConstantBuffer(const std::string &filepath);
 

@@ -1,0 +1,23 @@
+#include "../InputLayouts/default.hlsl"
+
+struct GBufferOut
+{
+  float4 world_pos  : SV_TARGET0;  // World position
+  float4 normal     : SV_TARGET1;  // World normal
+  float4 diffuse    : SV_TARGET2;  // Diffuse color
+  float4 specular   : SV_TARGET3;  // Specular
+};
+
+Texture2D<float4> gDiffuseTexture : register(t0);
+Texture2D<float4> gGBuffer[4] : register(t1);
+
+SamplerState gSamplerState : register(s0);
+
+GBufferOut main(VertexOut vin) : SV_TARGET
+{
+  GBufferOut output;
+
+  output.world_pos = vin.pos;
+  output.normal = float4(vin.normal, 0.0f);
+  output.diffuse =
+}

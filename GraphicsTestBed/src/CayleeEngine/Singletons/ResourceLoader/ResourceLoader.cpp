@@ -37,33 +37,72 @@ ResourceLoader::~ResourceLoader()
 }
 
 
-void ResourceLoader::LoadModel(const std::string &filepath)
+res::Model::Key ResourceLoader::LoadModel(const std::string &filepath)
 {
+  
   const aiScene *scene = mAssimpImporter->ReadFile(RESOURCE_PATH + filepath, 
                                                     aiProcessPreset_TargetRealtime_Fast);
-    
+  
   err::AssertWarn(scene, "Warning: Could not load model from file %s\nError Message: %s", 
                   filepath.c_str(), mAssimpImporter->GetErrorString());
-
+  
   if (!scene)
-    return;
+    return res::Model::Key();
     
   res::Model::Key new_model = res::Model::Create();
-    
+
+
+  // Normalize mesh data
+  float min_x = FLT_MAX; float max_x = 0.0f;
+  float min_y = FLT_MAX; float max_y = 0.0f;
+  float min_z = FLT_MAX; float max_z = 0.0f;
+
+  for (size_t i = 0; i < scene->mNumMeshes; ++i)
+  {
+    aiMesh *loaded_mesh = scene->mMeshes[i];
+
+    for (size_t j = 0; j < loaded_mesh->mNumVertices; ++j) 
+    {
+      max_x = max(max_x, loaded_mesh->mVertices[j].x);
+      max_y = max(max_y, loaded_mesh->mVertices[j].y);
+      max_z = max(max_z, loaded_mesh->mVertices[j].z);
+
+      min_x = min(min_x, loaded_mesh->mVertices[j].x);
+      min_y = min(min_y, loaded_mesh->mVertices[j].y);
+      min_z = min(min_z, loaded_mesh->mVertices[j].z);
+    }
+  }
+
+  float length_x = max_x - min_x;
+  float length_y = max_y - min_y;
+  float length_z = max_z - min_z;
+
     // NOTE: Make better when have time
   for (size_t i = 0; i < scene->mNumMeshes; ++i) {
-    res::Mesh::Key new_mesh = res::Mesh::Create();
     aiMesh *loaded_mesh = scene->mMeshes[i];
-      
-    loaded_mesh->mVertices->NormalizeSafe();
+    res::Mesh::Key new_mesh = res::Mesh::Create();
 
+      // Scale to a bounding box of -0.5f, 0.5f
+    for (size_t j = 0; j < loaded_mesh->mNumVertices; ++j) {
+      loaded_mesh->mVertices[j].x /= length_x;
+      loaded_mesh->mVertices[j].y /= length_y;
+      loaded_mesh->mVertices[j].z /= length_z;
+    }
+      
       // Does nothing if data is null
     new_mesh->CreateVertexBuffer(res::Mesh::Position, loaded_mesh->mVertices, loaded_mesh->mNumVertices);
     new_mesh->CreateVertexBuffer(res::Mesh::Normal, loaded_mesh->mNormals, loaded_mesh->mNumVertices);
     new_mesh->CreateVertexBuffer(res::Mesh::UV, loaded_mesh->mTextureCoords[0], loaded_mesh->mNumVertices);
+    
+    new_mesh->CreateIndexBuffer(loaded_mesh->mFaces, loaded_mesh->mNumFaces);
+    new_mesh->Build();
+
+    new_model->AppendMesh(new_mesh);
   }
 
   mAssimpImporter->FreeScene();
+
+  return new_model;
 }
 
 res::ShaderPipe::Key ResourceLoader::LoadShaderProgram(const std::string &foldername)

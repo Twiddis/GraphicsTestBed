@@ -238,12 +238,12 @@ void D3D::CreateBlendState()
 void D3D::SetViewport()
 {
   D3D11_VIEWPORT vp;
-  vp.Width = static_cast<float>(Window::GetInstance()->GetResolutionHeight());
-  vp.Height = static_cast<float>(Window::GetInstance()->GetResolutionWidth());
+  vp.Width = static_cast<float>(Window::GetInstance()->GetResolutionWidth());
+  vp.Height = static_cast<float>(Window::GetInstance()->GetResolutionHeight());
   vp.MinDepth = 0.0f;
   vp.MaxDepth = 1.0f;
   vp.TopLeftX = 0.0f;
-  vp.TopLeftY = 0.0f;
+  vp.TopLeftY = 1.0f;
 
   mDeviceContext->RSSetViewports(1, &vp);
 }

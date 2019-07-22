@@ -57,6 +57,17 @@ namespace CayleeEngine::res
     mBindStage = BindStage::UNBOUND;
   }
 
+  void RenderTarget::ClearRenderTarget()
+  {
+    ID3D11DeviceContext *devcon = D3D::GetInstance()->mDeviceContext;
+    const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+    for (auto &rtv : mRenderTargetViews)
+      devcon->ClearRenderTargetView(rtv, clear_color);
+
+    devcon->ClearDepthStencilView(mDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+  }
+
   void RenderTarget::Resize(int res_x, int res_y)
   {
     ClearResources();
@@ -123,6 +134,7 @@ namespace CayleeEngine::res
       depth_tex_desc.SampleDesc.Count = 1;
       depth_tex_desc.SampleDesc.Quality = 0;
       depth_tex_desc.Usage = D3D11_USAGE_DEFAULT;
+      depth_tex_desc.CPUAccessFlags = 0;
     }
 
     D3D11_DEPTH_STENCIL_VIEW_DESC depth_view_desc;
@@ -130,11 +142,14 @@ namespace CayleeEngine::res
       depth_view_desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
       depth_view_desc.Texture2D.MipSlice = 0;
       depth_view_desc.Flags = 0;
+      depth_view_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     }
 
     err::HRWarn(dev->CreateTexture2D(&depth_tex_desc, nullptr, &mDepthStencil), "WARNING RTV STUFF");
     err::HRWarn(dev->CreateDepthStencilView(mDepthStencil, &depth_view_desc, &mDepthStencilView), "WARNING RTV STUFF");
     err::HRWarn(dev->CreateDepthStencilState(&DEFAULT_DEPTH_STENCIL_DESC, &mDepthStencilState), "warning RTV STUFFS");
+
+    SafeRelease(mDepthStencil);
 
     D3D11_TEXTURE2D_DESC desc;
     {
@@ -171,5 +186,8 @@ namespace CayleeEngine::res
       err::HRWarn(dev->CreateShaderResourceView(mTextures[i], &srv_desc, &mShaderResourceViews[i]), "RenderTarget Failure");
       err::HRWarn(dev->CreateRenderTargetView(mTextures[i], &rtv_desc, &mRenderTargetViews[i]), "RenderTarget Failure");
     }
+
+    for (auto &tex : mTextures)
+      SafeRelease(tex);
   }
 }

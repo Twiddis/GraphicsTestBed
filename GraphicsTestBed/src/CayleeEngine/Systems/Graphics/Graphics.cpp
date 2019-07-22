@@ -38,6 +38,7 @@ void Graphics::StartFrame()
 {
   D3D::GetInstance()->ClearRenderTarget();
   D3D::GetInstance()->BindRenderTarget();
+  D3D::GetInstance()->mDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
   ImGui_ImplDX11_NewFrame();
   ImGui_ImplWin32_NewFrame();
@@ -46,10 +47,6 @@ void Graphics::StartFrame()
 
 void Graphics::Update(float)
 {
-  bool my_tool_active = true;
-  ImGui::Begin("My First Tool", &my_tool_active, ImGuiWindowFlags_MenuBar);
-  ImGui::Text("Hello World!");
-  ImGui::End();
 }
 void Graphics::EndFrame()
 {

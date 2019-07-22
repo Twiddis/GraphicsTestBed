@@ -1,6 +1,8 @@
 #pragma once
 #include "Singletons/Singleton.hpp"
 
+
+
 namespace CayleeEngine
 {
 
@@ -14,6 +16,10 @@ public:
   
     // NOTE: Don't touch, lol
   bool mQuitFlag;
+
+private:
+  std::unique_ptr<DirectX::Keyboard> mKeyboard;
+  std::unique_ptr<DirectX::Mouse> mMouse;
 };
 
 

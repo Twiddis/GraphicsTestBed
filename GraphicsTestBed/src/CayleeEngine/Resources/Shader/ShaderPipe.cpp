@@ -24,7 +24,9 @@ void ShaderPipe::AttachShader(Shader::Type type, Shader::Key shader)
 
 void ShaderPipe::Bind()
 {
-  for (auto &shader : mShaders)
-    shader->Bind();
+  for (auto &shader : mShaders) {
+    if (shader.IsValid())
+      shader->Bind();
+  }
 }
 }
