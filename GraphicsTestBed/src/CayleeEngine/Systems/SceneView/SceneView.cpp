@@ -26,6 +26,7 @@ static res::ShaderPipe::Key gShaderProgramDefault;
 static res::ShaderPipe::Key gShaderProgramGBuffer;
 static res::ShaderPipe::Key gShaderProgramPhong;
 static res::ShaderPipe::Key gShaderProgramLocalLight;
+static res::ShaderPipe::Key gShaderProgramShadowLight;
 
 static res::Camera::Key gCamera;
 
@@ -43,20 +44,15 @@ static res::Model::Key gModelSphere;
 static res::Texture::Key gTextureWood;
 static res::Texture::Key gTextureFur;
 
-static res::Entity::Key gTestEntity;
-static res::Entity::Key gTestEntity2;
-static res::Entity::Key gTestEntity3;
 static res::Entity::Key gFloorEntity;
-
-static std::vector<res::Entity::Key> gLightEntities;
 
 static res::RenderTarget::Key gBuffer;
 
 static res::Light::Key gMainLight;
 static std::vector<res::Light::Key> gLights;
-//static std::vector<res::Entity::Key> gLightEntities;
 
 static int gGBufferRenderSetting = 0;
+
 SceneView::SceneView()
 {
   ResourceLoader::Initialize();
@@ -72,6 +68,7 @@ SceneView::SceneView()
   gShaderProgramGBuffer = ResourceLoader::GetInstance()->LoadShaderProgram("GBufferShader");
   gShaderProgramPhong = ResourceLoader::GetInstance()->LoadShaderProgram("PhongShader");
   gShaderProgramLocalLight = ResourceLoader::GetInstance()->LoadShaderProgram("LocalLightShader");
+  gShaderProgramShadowLight = ResourceLoader::GetInstance()->LoadShaderProgram("ShadowLightShader");
 
   gEntityTransformBuffer = res::D3DBuffer::FindBufferWIthName("EntityTransform.hlsl");
   gGBufferRenderFlagsBuffer = res::D3DBuffer::FindBufferWIthName("GBufferRenderFlags.hlsl");
@@ -125,33 +122,6 @@ SceneView::SceneView()
   gMainLight = res::Light::Create();
   gMainLight->mPosition = Vec3(0.0f, 20.0f, 0.0f);
 
-  const size_t light_count = 100;
-  const Vec2 x_range(-15.0f, 15.0f);
-  const Vec2 y_range(1.0f, 3.0f);
-  const Vec2 z_range(-15.0f, 15.0f);
-  const Vec2 r_range(5.0f, 8.0f);
-
-  std::srand(static_cast<size_t>(std::time(nullptr)));
-  
-  for (size_t i = 0; i < light_count; ++i)
-  {
-    gLights.push_back(res::Light::Create());
-
-    float xs = static_cast <float> (std::rand()) / static_cast <float> (RAND_MAX);
-    float ys = static_cast <float> (std::rand()) / static_cast <float> (RAND_MAX);
-    float zs = static_cast <float> (std::rand()) / static_cast <float> (RAND_MAX);
-    float rs = static_cast <float> (std::rand()) / static_cast <float> (RAND_MAX);
-
-    float x = (1.0f - xs) * x_range.x + xs * x_range.y;
-    float y = (1.0f - ys) * y_range.x + ys * y_range.y;
-    float z = (1.0f - zs) * z_range.x + zs * z_range.y;
-    float r = (1.0f - rs) * z_range.x + rs * z_range.y;
-
-    gLights.back()->mPosition = Vec3(x, y, z);
-    gLights.back()->mColor = Vec4(xs, zs, 1.0f, 1.0f);
-    gLights.back()->mRadius = r;
-  }
-  
     // Position
     // Normal
     // Diffuse
@@ -202,6 +172,13 @@ void SceneView::Update(float)
 
   trans_buffer.view = gCamera->GetViewMatrix().Transpose();
   trans_buffer.projection = gCamera->GetProjectionMatrix().Transpose();
+  
+    // Shader Pass
+  for (auto &light : gLights)
+  {
+
+  }
+  
 
     // Draw Entities
   gBuffer->BindAsRenderTarget();
@@ -244,16 +221,6 @@ void SceneView::Update(float)
   //   only uses "Vertex ID" to determine uv coords, pos, etc.
   D3D::GetInstance()->BindRenderTarget();
   devcon->Draw(4, 0);
-
-  gShaderProgramLocalLight->Bind();
-  gViewBuffer->MapData(&gCamera->mPosition);
-
-    // Add on local lighting
-  for (auto &light : gLights)
-  {
-    gLightBuffer->MapData(&(light->mColor));
-    devcon->Draw(4, 0);
-  }
 
   // Reset old topology
   devcon->IASetPrimitiveTopology(topology);
@@ -300,10 +267,10 @@ void SceneView::Input()
     gCamera->RotateCamera(static_cast<float>(mouse.x) * 0.01f, static_cast<float>(mouse.y) * 0.01f);
 
 
-  if (kb.Right == true)
-    gTestEntity->mRotation += Vec3(0.0f, 0.1f, 0.0f);
-  if (kb.Up == true)
-    gTestEntity->mRotation += Vec3(0.0f, 0.0f, 0.1f);
+  //if (kb.Right == true)
+  //  gTestEntity->mRotation += Vec3(0.0f, 0.1f, 0.0f);
+  //if (kb.Up == true)
+  //  gTestEntity->mRotation += Vec3(0.0f, 0.0f, 0.1f);
 
     // Settings
   if (kb_tracker.IsKeyPressed(Keyboard::D1))
