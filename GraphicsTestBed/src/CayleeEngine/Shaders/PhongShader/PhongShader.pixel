@@ -1,7 +1,9 @@
 #include "../InputLayouts/default.hlsl"
 #include "../ConstantBuffers/GBufferRenderFlags.hlsl"
+#include "../ConstantBuffers/Light.hlsl"
 
 GBUFFER_RENDER_FLAGS(0);
+LIGHT(1);
 
 struct FSQ_Vertex
 {
@@ -21,8 +23,11 @@ float4 main(FSQ_Vertex vin) : SV_TARGET
 
 	const float3 NORMALIZE_WORLD_RANGE = float3(5.0f, 5.0f, 5.0f);
 
-    // Calculate lighting
-  float4 color = float4(0.0f, .75f, 1.0f, 1.0f);
+    // Calculate Global Lighting
+	float3 light_dir = normalize(light_position - world_pos.xyz);
+	float light_angle = saturate(dot(light_dir, normal.xyz));
+
+	float4 color = light_color * light_angle * diffuse / 3.1415f;
 
   [flatten] switch(render_setting)
   {

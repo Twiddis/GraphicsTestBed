@@ -22,8 +22,10 @@ public:
 
   void RotateCamera(float yaw, float pitch);
 
-private:
   Vec3 mPosition;
+
+private:
+
   Vec2 mScale;
   Vec3 mUp;
   Vec3 mRight;

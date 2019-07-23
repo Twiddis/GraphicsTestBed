@@ -38,6 +38,7 @@ private:
   ID3D11Texture2D *mDepthStencil;
   ID3D11DepthStencilView *mDepthStencilView;
   ID3D11DepthStencilState *mDepthStencilState;
+  ID3D11BlendState *mBlendState;
 
   std::vector<ID3D11Texture2D*> mTextures;
   std::vector<ID3D11ShaderResourceView*> mShaderResourceViews;

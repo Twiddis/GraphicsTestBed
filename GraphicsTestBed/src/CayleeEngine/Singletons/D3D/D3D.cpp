@@ -35,11 +35,12 @@ void D3D::BindRenderTarget()
 {
   mDeviceContext->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
   mDeviceContext->OMSetDepthStencilState(mDepthStencilState, 0xFF);
+  mDeviceContext->OMSetBlendState(mBlendState, nullptr, 0xFFFFFFFF);
 }
 
 void D3D::ClearRenderTarget()
 {
-  const float clear_color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+  const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
   mDeviceContext->ClearRenderTargetView(mRenderTargetView, clear_color);
   mDeviceContext->ClearDepthStencilView(mDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
@@ -63,7 +64,7 @@ void D3D::InitializeDirectX()
   unsigned total_driver_types = ARRAYSIZE(driver_types);
   unsigned total_feature_levels = ARRAYSIZE(feature_levels);
 
-  HRESULT hr;
+  HRESULT hr = S_OK;
   DXGI_SWAP_CHAIN_DESC sd;
   {
     ZeroMemory(&sd, sizeof(sd));
@@ -152,7 +153,7 @@ void D3D::CreateDepthStencilState()
 {
   D3D11_DEPTH_STENCIL_DESC desc;
 
-  desc.DepthEnable = true;
+  desc.DepthEnable = false;
   desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
   desc.DepthFunc = D3D11_COMPARISON_LESS;
 
@@ -215,18 +216,18 @@ void D3D::CreateBlendState()
 {
   D3D11_BLEND_DESC desc;
 
-  desc.AlphaToCoverageEnable = true;
+  desc.AlphaToCoverageEnable = false;
   desc.IndependentBlendEnable = false;
 
   for (unsigned i = 0; i < 8; ++i) {
     desc.RenderTarget[i].BlendEnable = true;
-    desc.RenderTarget[i].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-    desc.RenderTarget[i].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    desc.RenderTarget[i].SrcBlend = D3D11_BLEND_ONE;
+    desc.RenderTarget[i].DestBlend = D3D11_BLEND_ONE;
     desc.RenderTarget[i].BlendOp = D3D11_BLEND_OP_ADD;
     desc.RenderTarget[i].SrcBlendAlpha = D3D11_BLEND_ONE;
     desc.RenderTarget[i].DestBlendAlpha = D3D11_BLEND_ZERO;
     desc.RenderTarget[i].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    desc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    desc.RenderTarget[i].RenderTargetWriteMask = D3D10_COLOR_WRITE_ENABLE_ALL;
   }
 
   err::HRFail(mDevice->CreateBlendState(&desc, &mBlendState),

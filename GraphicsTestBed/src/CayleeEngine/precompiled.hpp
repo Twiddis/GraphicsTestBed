@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <vector>
 #include <random>
+#include <ctime>
 
 #include <comdef.h>
 #include <d3d11.h>

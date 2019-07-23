@@ -32,6 +32,7 @@ namespace CayleeEngine::res
                                    mDepthStencil(nullptr),
                                    mDepthStencilView(nullptr),
                                    mDepthStencilState(nullptr),
+                                   mBlendState(nullptr),
                                    mTextures(num_textures, nullptr),
                                    mShaderResourceViews(num_textures, nullptr),
                                    mRenderTargetViews(num_textures, nullptr)
@@ -83,6 +84,7 @@ namespace CayleeEngine::res
 
     devcon->OMSetDepthStencilState(mDepthStencilState, 0xFF);
     devcon->OMSetRenderTargets(mNumTextures, mRenderTargetViews.data(), mDepthStencilView);
+    devcon->OMSetBlendState(mBlendState, nullptr, 0xFFFFFFFF);
 
     mBindStage = BindStage::TARGET;
   }
@@ -106,6 +108,7 @@ namespace CayleeEngine::res
     SafeRelease(mDepthStencil);
     SafeRelease(mDepthStencilView);
     SafeRelease(mDepthStencilState);
+    SafeRelease(mBlendState);
 
     for (auto &tex : mTextures)
       SafeRelease(tex);
@@ -145,9 +148,26 @@ namespace CayleeEngine::res
       depth_view_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     }
 
+    D3D11_BLEND_DESC blend_desc;
+    {
+      blend_desc.AlphaToCoverageEnable = false;
+      blend_desc.IndependentBlendEnable = false;
+
+      blend_desc.RenderTarget[0].BlendEnable = false;
+      blend_desc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+      blend_desc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+      blend_desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+      blend_desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+      blend_desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+      blend_desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+      blend_desc.RenderTarget[0].RenderTargetWriteMask = D3D10_COLOR_WRITE_ENABLE_ALL;
+    }
+
+
     err::HRWarn(dev->CreateTexture2D(&depth_tex_desc, nullptr, &mDepthStencil), "WARNING RTV STUFF");
     err::HRWarn(dev->CreateDepthStencilView(mDepthStencil, &depth_view_desc, &mDepthStencilView), "WARNING RTV STUFF");
     err::HRWarn(dev->CreateDepthStencilState(&DEFAULT_DEPTH_STENCIL_DESC, &mDepthStencilState), "warning RTV STUFFS");
+    err::HRWarn(dev->CreateBlendState(&blend_desc, &mBlendState), "WARNING Blendstate RT messed up");
 
     SafeRelease(mDepthStencil);
 

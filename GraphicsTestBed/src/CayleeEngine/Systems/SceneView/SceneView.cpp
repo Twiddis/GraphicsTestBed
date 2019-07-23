@@ -8,6 +8,7 @@
 #include "Resources/Camera/Camera.hpp"
 #include "Resources/ShaderResource/RenderTarget.hpp"
 #include "Resources/Texture/Texture.hpp"
+#include "Resources/Light/Light.hpp"
 
 namespace CayleeEngine::sys
 {
@@ -24,23 +25,36 @@ struct BEntityTransform
 static res::ShaderPipe::Key gShaderProgramDefault;
 static res::ShaderPipe::Key gShaderProgramGBuffer;
 static res::ShaderPipe::Key gShaderProgramPhong;
+static res::ShaderPipe::Key gShaderProgramLocalLight;
 
 static res::Camera::Key gCamera;
+
 static res::D3DBuffer::Key gEntityTransformBuffer;
 static res::D3DBuffer::Key gGBufferRenderFlagsBuffer;
+static res::D3DBuffer::Key gLightBuffer;
+static res::D3DBuffer::Key gViewBuffer;
 
 static ID3D11SamplerState *gSamplerState = nullptr;
 
-
 static res::Model::Key gModelBunny;
 static res::Model::Key gModelCube;
+static res::Model::Key gModelSphere;
 
 static res::Texture::Key gTextureWood;
+static res::Texture::Key gTextureFur;
 
 static res::Entity::Key gTestEntity;
+static res::Entity::Key gTestEntity2;
+static res::Entity::Key gTestEntity3;
 static res::Entity::Key gFloorEntity;
 
+static std::vector<res::Entity::Key> gLightEntities;
+
 static res::RenderTarget::Key gBuffer;
+
+static res::Light::Key gMainLight;
+static std::vector<res::Light::Key> gLights;
+//static std::vector<res::Entity::Key> gLightEntities;
 
 static int gGBufferRenderSetting = 0;
 SceneView::SceneView()
@@ -49,26 +63,54 @@ SceneView::SceneView()
   
   gModelBunny = ResourceLoader::GetInstance()->LoadModel("stanford-bunny.fbx");
   gModelCube = ResourceLoader::GetInstance()->LoadModel("cubeycube.fbx");
+  gModelSphere = ResourceLoader::GetInstance()->LoadModel("sphereysphere.fbx");
 
   gTextureWood = res::Texture::Create(L"../res/TexturesCom_WoodFine0086_7_seamless_S.dds");
+  gTextureFur = res::Texture::Create(L"../res/TexturesCom_Fur0007_M.dds");
 
   gShaderProgramDefault = ResourceLoader::GetInstance()->LoadShaderProgram("DefaultShader");
   gShaderProgramGBuffer = ResourceLoader::GetInstance()->LoadShaderProgram("GBufferShader");
   gShaderProgramPhong = ResourceLoader::GetInstance()->LoadShaderProgram("PhongShader");
+  gShaderProgramLocalLight = ResourceLoader::GetInstance()->LoadShaderProgram("LocalLightShader");
 
   gEntityTransformBuffer = res::D3DBuffer::FindBufferWIthName("EntityTransform.hlsl");
   gGBufferRenderFlagsBuffer = res::D3DBuffer::FindBufferWIthName("GBufferRenderFlags.hlsl");
-  
+  gLightBuffer = res::D3DBuffer::FindBufferWIthName("Light.hlsl");
+  gViewBuffer = res::D3DBuffer::FindBufferWIthName("ViewVector.hlsl");
+
   gCamera = res::Camera::Create();
 
-  gTestEntity = res::Entity::Create();
-  {
-    gTestEntity->mModel = gModelBunny;
-    gTestEntity->mShaderProgram = gShaderProgramGBuffer;
-    gTestEntity->mPosition = Vec3(0.0f, 0.5f, -4.0f);
-    gTestEntity->mScale = Vec3(1.0f, 1.0f, 1.0);
-    gTestEntity->mRotation = Vec3(0.0f, 0.0f, 0.0f);
-  }
+  gMainLight = res::Light::Create();
+
+  //gTestEntity = res::Entity::Create();
+  //{
+  //  gTestEntity->mModel = gModelBunny;
+  //  gTestEntity->mShaderProgram = gShaderProgramGBuffer;
+  //  gTestEntity->mTexture = gTextureWood;
+  //  gTestEntity->mPosition = Vec3(0.0f, 0.5f, -4.0f);
+  //  gTestEntity->mScale = Vec3(1.0f, 1.0f, 1.0);
+  //  gTestEntity->mRotation = Vec3(0.0f, 0.0f, 0.0f);
+  //}
+
+  //gTestEntity2 = res::Entity::Create();
+  //{
+  //  gTestEntity2->mModel = gModelBunny;
+  //  gTestEntity2->mShaderProgram = gShaderProgramGBuffer;
+  //  gTestEntity2->mTexture = gTextureWood;
+  //  gTestEntity2->mPosition = Vec3(1.0f, 2.5f, 0.0f);
+  //  gTestEntity2->mScale = Vec3(1.0f, 1.0f, 1.0);
+  //  gTestEntity2->mRotation = Vec3(1.0f, 0.0f, 0.0f);
+  //}
+
+  //gTestEntity3 = res::Entity::Create();
+  //{
+  //  gTestEntity3->mModel = gModelBunny;
+  //  gTestEntity3->mShaderProgram = gShaderProgramGBuffer;
+  //  gTestEntity3->mTexture = gTextureWood;
+  //  gTestEntity3->mPosition = Vec3(3.0f, 0.5f, 3.0f);
+  //  gTestEntity3->mScale = Vec3(1.0f, 1.0f, 1.0);
+  //  gTestEntity3->mRotation = Vec3(0.0f, 2.0f, 0.0f);
+  //}
 
   gFloorEntity = res::Entity::Create();
   {
@@ -76,10 +118,40 @@ SceneView::SceneView()
     gFloorEntity->mShaderProgram = gShaderProgramGBuffer;
     gFloorEntity->mTexture = gTextureWood;
     gFloorEntity->mPosition = Vec3(0.0f, -0.5f, 0.0f);
-    gFloorEntity->mScale = Vec3(10.0f, 0.5f, 10.0);
+    gFloorEntity->mScale = Vec3(30.0f, 0.5f, 30.0);
     gFloorEntity->mRotation = Vec3(0.0f, 0.0f, 0.0f);
   }
 
+  gMainLight = res::Light::Create();
+  gMainLight->mPosition = Vec3(0.0f, 20.0f, 0.0f);
+
+  const size_t light_count = 100;
+  const Vec2 x_range(-15.0f, 15.0f);
+  const Vec2 y_range(1.0f, 3.0f);
+  const Vec2 z_range(-15.0f, 15.0f);
+  const Vec2 r_range(5.0f, 8.0f);
+
+  std::srand(static_cast<size_t>(std::time(nullptr)));
+  
+  for (size_t i = 0; i < light_count; ++i)
+  {
+    gLights.push_back(res::Light::Create());
+
+    float xs = static_cast <float> (std::rand()) / static_cast <float> (RAND_MAX);
+    float ys = static_cast <float> (std::rand()) / static_cast <float> (RAND_MAX);
+    float zs = static_cast <float> (std::rand()) / static_cast <float> (RAND_MAX);
+    float rs = static_cast <float> (std::rand()) / static_cast <float> (RAND_MAX);
+
+    float x = (1.0f - xs) * x_range.x + xs * x_range.y;
+    float y = (1.0f - ys) * y_range.x + ys * y_range.y;
+    float z = (1.0f - zs) * z_range.x + zs * z_range.y;
+    float r = (1.0f - rs) * z_range.x + rs * z_range.y;
+
+    gLights.back()->mPosition = Vec3(x, y, z);
+    gLights.back()->mColor = Vec4(xs, zs, 1.0f, 1.0f);
+    gLights.back()->mRadius = r;
+  }
+  
     // Position
     // Normal
     // Diffuse
@@ -153,9 +225,9 @@ void SceneView::Update(float)
     entity.second->mModel->Draw();
   }
 
-
     // Draw GBuffer
   gGBufferRenderFlagsBuffer->MapData(&gGBufferRenderSetting);
+  gLightBuffer->MapData(&(gMainLight->mColor));
 
   ID3D11DeviceContext *devcon = D3D::GetInstance()->mDeviceContext;
   gShaderProgramPhong->Bind();
@@ -172,6 +244,16 @@ void SceneView::Update(float)
   //   only uses "Vertex ID" to determine uv coords, pos, etc.
   D3D::GetInstance()->BindRenderTarget();
   devcon->Draw(4, 0);
+
+  gShaderProgramLocalLight->Bind();
+  gViewBuffer->MapData(&gCamera->mPosition);
+
+    // Add on local lighting
+  for (auto &light : gLights)
+  {
+    gLightBuffer->MapData(&(light->mColor));
+    devcon->Draw(4, 0);
+  }
 
   // Reset old topology
   devcon->IASetPrimitiveTopology(topology);
