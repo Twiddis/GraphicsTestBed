@@ -7,11 +7,12 @@ VertexOut main(VertexIn vin)
 {
   VertexOut output;
 
-  matrix mv = mul(view, model);
-  matrix mvp = mul(projection, mv);
+  float4 world_pos = mul(float4(vin.pos, 1.0f), model);
 
-  output.pos = mul(mv, float4(vin.pos, 1.0f));
-  output.normal = mul(mvp, vin.normal).xyz;
+  output.pos = mul(mul(world_pos, view), projection);
+  output.world_pos = world_pos.xyz;
+  //output.normal = vin.normal;
+  output.normal = mul(float4(vin.normal, 0.0f), trans_inv_model).xyz;
   output.uv = vin.uv;
 
   return output;

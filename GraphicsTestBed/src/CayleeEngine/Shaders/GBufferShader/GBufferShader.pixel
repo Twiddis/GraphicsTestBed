@@ -11,13 +11,16 @@ struct GBufferOut
 Texture2D<float4> gDiffuseTexture : register(t0);
 Texture2D<float4> gGBuffer[4] : register(t1);
 
-SamplerState gSamplerState : register(s0);
+SamplerState gSampler : register(s0);
 
 GBufferOut main(VertexOut vin) : SV_TARGET
 {
   GBufferOut output;
 
-  output.world_pos = vin.pos;
-  output.normal = float4(vin.normal, 0.0f);
-  output.diffuse =
+  output.world_pos = float4(vin.world_pos, 1.0f);
+  output.normal = float4(vin.normal, 1.0f);
+  output.diffuse = gDiffuseTexture.Sample(gSampler, vin.uv);
+  output.specular = float4(0.5f, 0.5f, 0.5f, 1.0f);
+
+  return output;
 }

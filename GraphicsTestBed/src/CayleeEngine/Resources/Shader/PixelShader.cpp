@@ -38,6 +38,10 @@ void PixelShader::Bind()
   }
 
   D3D::GetInstance()->mDeviceContext->PSSetShader(mPixelShader, NULL, 0);
+
+  for (auto &it : mAssignedBuffers) {
+    D3D::GetInstance()->mDeviceContext->PSSetConstantBuffers(it.first, 1, it.second->GetBuffer());
+  }
 }
 
 ResourceID PixelShader::Create()

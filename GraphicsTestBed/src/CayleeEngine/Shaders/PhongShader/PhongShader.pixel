@@ -1,0 +1,42 @@
+#include "../InputLayouts/default.hlsl"
+#include "../ConstantBuffers/GBufferRenderFlags.hlsl"
+
+GBUFFER_RENDER_FLAGS(0);
+
+struct FSQ_Vertex
+{
+	float4 pos : SV_POSITION;
+	float2 uv  : TEXCOORD;
+};
+
+SamplerState gSampler : register(s0);
+Texture2D<float4> gGBuffer[4] : register(t0);
+
+float4 main(FSQ_Vertex vin) : SV_TARGET
+{
+  float4 world_pos = gGBuffer[0].Sample(gSampler, vin.uv);
+  float4 normal =    gGBuffer[1].Sample(gSampler, vin.uv);
+  float4 diffuse =   gGBuffer[2].Sample(gSampler, vin.uv);
+  float4 specular =  gGBuffer[3].Sample(gSampler, vin.uv);
+
+	const float3 NORMALIZE_WORLD_RANGE = float3(5.0f, 5.0f, 5.0f);
+
+    // Calculate lighting
+  float4 color = float4(0.0f, .75f, 1.0f, 1.0f);
+
+  [flatten] switch(render_setting)
+  {
+    case 0:
+      return color;
+    case 1:
+      return float4(world_pos.xyz / NORMALIZE_WORLD_RANGE, 1.0f);
+    case 2:
+      return float4((normal.xyz + float3(1.0f, 1.0f, 1.0f)) / 2.0f, 1.0f);
+    case 3:
+      return float4(diffuse.xyz, 1.0f);
+    case 4:
+      return float4(specular.xyz, 1.0f);
+    default:
+      return color;
+  }
+}

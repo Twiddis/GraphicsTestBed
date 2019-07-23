@@ -96,7 +96,7 @@ namespace CayleeEngine::res
 
     mStartingSlot = starting_slot;
 
-    devcon->PSGetShaderResources(starting_slot, mNumTextures, mShaderResourceViews.data());
+    devcon->PSSetShaderResources(starting_slot, mNumTextures, mShaderResourceViews.data());
 
     mBindStage = BindStage::RESOURCE;
   }

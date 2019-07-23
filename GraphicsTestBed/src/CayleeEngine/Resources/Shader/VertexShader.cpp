@@ -92,13 +92,15 @@ void VertexShader::LoadShader(const std::wstring &filepath)
   std::string file_buffer = str_stream.str();
 
   const std::string search_input_layout = "#include \"../InputLayouts/";
-  size_t search_pos = file_buffer.find(search_input_layout) + search_input_layout.length();
+  size_t search_pos = file_buffer.find(search_input_layout);
+  if (search_pos != std::string::npos)
+    search_pos += search_input_layout.length();
+  
   size_t search_end = file_buffer.find('\"', search_pos);
 
   std::string input_layout_filename;
   
   if (search_pos == std::string::npos) {
-    err::AssertWarn(false, "WARNING: No input layout found when compiling shader. Defaulting to default layout");
     input_layout_filename = "default.hlsl";
   }
   else {
