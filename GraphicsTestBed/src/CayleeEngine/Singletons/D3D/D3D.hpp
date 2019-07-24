@@ -14,7 +14,7 @@ public:
 
 private:
   void InitializeDirectX();
-
+  
   void CreateRenderTargetView();
   void CreateRasterizerState();
   void CreateDepthStencilState();

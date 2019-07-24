@@ -1,9 +1,14 @@
-#include "../InputLayouts/default.hlsl"
+struct FSQ_Vertex
+{
+	float4 pos : SV_POSITION;
+	float2 uv  : TEXCOORD;
+};
 
-Texture2D<float4> gDiffuseTexture : register(t0);
+Texture2D<float4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 
-float4 main(VertexOut vin) : SV_TARGET
+float4 main(FSQ_Vertex vin) : SV_TARGET
 {
-  return float4(gDiffuseTexture.Sample(gSampler, vin.uv).xyz, 1.0f);
+  float3 texel = gTexture.Sample(gSampler, vin.uv).xyz / 100.0f;
+  return float4(texel.x, texel.x, texel.x, 1.0f) ;
 }

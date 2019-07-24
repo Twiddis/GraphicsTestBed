@@ -26,6 +26,7 @@ namespace CayleeEngine::res
   };
 
   RenderTarget::RenderTarget(size_t num_textures, int res_x, int res_y) :
+                                   mResX(res_x), mResY(res_y),
                                    mBindStage(UNBOUND),
                                    mStartingSlot(0),
                                    mNumTextures(num_textures),
@@ -82,6 +83,16 @@ namespace CayleeEngine::res
     if (mBindStage == BindStage::RESOURCE)
       Unbind();
 
+    D3D11_VIEWPORT vp;
+    vp.Width = static_cast<float>(mResX);
+    vp.Height = static_cast<float>(mResY);
+
+    vp.MaxDepth = 1.0f;
+    vp.MinDepth = 0.0f;
+    vp.TopLeftX = 0.0f;
+    vp.TopLeftY = 1.0f;
+
+    devcon->RSSetViewports(1, &vp);
     devcon->OMSetDepthStencilState(mDepthStencilState, 0xFF);
     devcon->OMSetRenderTargets(mNumTextures, mRenderTargetViews.data(), mDepthStencilView);
     devcon->OMSetBlendState(mBlendState, nullptr, 0xFFFFFFFF);

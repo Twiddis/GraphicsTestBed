@@ -36,6 +36,8 @@ void D3D::BindRenderTarget()
   mDeviceContext->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
   mDeviceContext->OMSetDepthStencilState(mDepthStencilState, 0xFF);
   mDeviceContext->OMSetBlendState(mBlendState, nullptr, 0xFFFFFFFF);
+
+  SetViewport();
 }
 
 void D3D::ClearRenderTarget()

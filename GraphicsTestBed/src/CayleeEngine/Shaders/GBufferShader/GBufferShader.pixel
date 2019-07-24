@@ -18,7 +18,7 @@ GBufferOut main(VertexOut vin) : SV_TARGET
   GBufferOut output;
 
   output.world_pos = float4(vin.world_pos, 1.0f);
-  output.normal = float4(vin.normal, 1.0f);
+  output.normal = float4(vin.normal, 0.0f);
   output.diffuse = gDiffuseTexture.Sample(gSampler, vin.uv);
   output.specular = float4(0.5f, 0.5f, 0.5f, 1.0f);
 

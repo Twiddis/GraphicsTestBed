@@ -27,8 +27,6 @@ Light::Light(size_t res_x, size_t res_y) : mColor(1.0f, 1.0f, 1.0f, 1.0f),
                                             mPosition(0.0f, 0.0f, 0.0f),
                                             mLookAtPosition(0.0f, 0.0f, 0.0f),
                                             mViewMatrix(), mProjectionMatrix(),
-                                            mDepthStencilView(nullptr),
-                                            mRasterizerState(nullptr),
                                             mViewport()
 {
   mViewport.Width = static_cast<float>(res_x);
@@ -39,32 +37,28 @@ Light::Light(size_t res_x, size_t res_y) : mColor(1.0f, 1.0f, 1.0f, 1.0f),
   mViewport.TopLeftX = 0.0f;
   mViewport.TopLeftY = 1.0f;
 
-  CreateDepthBuffer(res_x, res_y);
+  mShadowMap = RenderTarget::Create(1, res_x, res_y);
 }
 
 Light::~Light()
 {
-  SafeRelease(mRasterizerState);
-
-  SafeRelease(mDepthStencilView);
-
-  SafeRelease(mShaderResourceView);
-  SafeRelease(mRenderTargetView);
 }
 
-void Light::BindAsRenderTarget()
+void CayleeEngine::res::Light::ClearRenderTarget()
 {
-  ID3D11DeviceContext *devcon = D3D::GetInstance()->mDeviceContext;
+  mShadowMap->ClearRenderTarget();
+}
 
-  devcon->OMSetDepthStencilState(mDepthStencilState, 0xFF);
-  devcon->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
+void Light::BindForRender()
+{
+  mShadowMap->BindAsRenderTarget();
+  D3D::GetInstance()->mDeviceContext->RSSetViewports(1, &mViewport);
   
-  //devcon->OMSetBlendState(mBlendState, nullptr, 0xFFFFFFFF);
 }
 
-void Light::BindAsResource()
+void Light::BindForResource(UINT slot)
 {
-
+  mShadowMap->BindAsResourceView(slot);
 }
 
 void Light::GenerateViewMatrix()
@@ -74,94 +68,7 @@ void Light::GenerateViewMatrix()
 
 void Light::GenerateProjectionMatrix()
 {
-  mProjectionMatrix = Mat::CreatePerspective(mViewport.Width, mViewport.Height, 0.1f, 1000.0f);
-}
-
-void Light::CreateDepthBuffer(size_t res_x, size_t res_y)
-{
-  SafeRelease(mDepthStencilView);
-  SafeRelease(mShaderResourceView);
-
-  ID3D11Device *dev = D3D::GetInstance()->mDevice; 
-  ID3D11Texture2D *depth_buffer = nullptr;
-
-  {
-    D3D11_TEXTURE2D_DESC desc;
-
-    desc.Width = res_x;
-    desc.Height = res_y;
-    desc.MipLevels = 1;
-    desc.ArraySize = 1;
-    desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    desc.SampleDesc.Count = 4;
-    desc.SampleDesc.Quality = 0;
-    desc.Usage = D3D11_USAGE_DEFAULT;
-    desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    desc.CPUAccessFlags = 0;
-    desc.MiscFlags = 0;
-
-    err::HRWarn(dev->CreateTexture2D(&desc, NULL, &depth_buffer),
-      "WARNING: Unable To Create Depth Stencil Buffer");
-  }
-
-  {
-    D3D11_DEPTH_STENCIL_VIEW_DESC desc;
-
-    desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
-    desc.Texture2D.MipSlice = 0;
-    desc.Flags = 0;
-
-    err::HRWarn(dev->CreateDepthStencilView(depth_buffer, &desc, &mDepthStencilView),
-      "WARNING: Unable To Create Depth Stencil View");
-  }
-
-  err::HRWarn(dev->CreateDepthStencilState(&DEFAULT_DEPTH_STENCIL_DESC, &mDepthStencilState), "warning LIGHT STUFFS");
-  ID3D11Texture2D *shadow_map_buffer = nullptr;
-
-  {
-    D3D11_TEXTURE2D_DESC desc;
-
-    desc.Width = res_x;
-    desc.Height = res_y;
-    desc.MipLevels = 1;
-    desc.ArraySize = 1;
-    desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    desc.SampleDesc.Count = 4;
-    desc.SampleDesc.Quality = 0;
-    desc.Usage = D3D11_USAGE_DEFAULT;
-    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
-    desc.CPUAccessFlags = 0;
-    desc.MiscFlags = 0;
-
-    err::HRWarn(dev->CreateTexture2D(&desc, NULL, &shadow_map_buffer),
-      "WARNING: Unable To Create Depth Stencil Buffer");
-  }
-
-  {
-    D3D11_SHADER_RESOURCE_VIEW_DESC desc;
-
-    desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    desc.Texture2D.MipLevels = 1;
-    desc.Texture2D.MostDetailedMip = 0;
-
-    err::HRWarn(dev->CreateShaderResourceView(depth_buffer, &desc, &mShaderResourceView),
-        "WARNING: Unable to create shade rresource view");
-  }
-
-  {
-    D3D11_RENDER_TARGET_VIEW_DESC desc;
-
-    desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-    desc.Texture2D.MipSlice = 0;
-
-    err::HRWarn(dev->CreateRenderTargetView(shadow_map_buffer, &desc, &mRenderTargetView), "RenderTarget Failure");
-  }
-
-  SafeRelease(depth_buffer);
-  SafeRelease(shadow_map_buffer);
+  mProjectionMatrix = Mat::CreatePerspectiveFieldOfView(3.14f / 1.5f, 1.0f, 0.1f, 100.0f);
 }
 
 

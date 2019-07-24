@@ -71,6 +71,8 @@ res::Model::Key ResourceLoader::LoadModel(const std::string &filepath)
       min_y = min(min_y, loaded_mesh->mVertices[j].y);
       min_z = min(min_z, loaded_mesh->mVertices[j].z);
     }
+
+    loaded_mesh->mNormals[i].Normalize();
   }
 
   float length_x = max_x - min_x;
@@ -88,7 +90,7 @@ res::Model::Key ResourceLoader::LoadModel(const std::string &filepath)
       loaded_mesh->mVertices[j].y /= length_y;
       loaded_mesh->mVertices[j].z /= length_z;
     }
-      
+     
       // Does nothing if data is null
     new_mesh->CreateVertexBuffer(res::Mesh::Position, loaded_mesh->mVertices, loaded_mesh->mNumVertices);
     new_mesh->CreateVertexBuffer(res::Mesh::Normal, loaded_mesh->mNormals, loaded_mesh->mNumVertices);

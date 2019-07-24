@@ -1,18 +1,41 @@
-#include "../InputLayouts/default.hlsl"
-#include "../ConstantBuffers/EntityTransform.hlsl"
+// Neat little trick found here:
+// https://gamedev.stackexchange.com/questions/98283/how-do-i-draw-a-full-screen-quad-in-directx-11
 
-ENTITY_TRANSFORM(0);
-
-VertexOut main(VertexIn vin)
+struct FSQ_Vertex
 {
-  VertexOut output;
+	float4 pos : SV_POSITION;
+	float2 uv  : TEXCOORD;
+};
 
-  float4 world_pos = mul(float4(vin.pos, 1.0f), model);
+	// This is meant to be called with a regular non-indexed draw call with
+	// 4 vertices as input.
+	// Must also be called with primitive topology set to TRIANGLESTRIP
+FSQ_Vertex main(uint vertex_id : SV_VERTEXID)
+{
+	FSQ_Vertex output;
 
-  output.pos = mul(mul(world_pos, view), projection);
-  output.world_pos = world_pos.xyz;
-  output.normal = mul(float4(vin.normal, 0.0f), trans_inv_model).xyz;
-  output.uv = vin.uv;
+		// Creates the following uv's:
+		// ID   (u, v)
+		// ------------------------
+		// 0    (0, 0)
+		// 1    (1, 0)
+		// 2    (0, 1)
+		// 3    (1, 1)
 
-  return output;
+  // 0b00 = -1, -1
+  // 0b01 =  1, -1
+  // 0b10 = -1,  1
+  // 0b11 =  1,  1
+  output.pos = float4(
+    ((vertex_id & 1) -.5f) * 2, //x
+    ((vertex_id >> 1) -.5f) * 2, //y
+    0, 1
+  );
+
+  output.uv = float2(
+    vertex_id & 1,  //u
+    !(vertex_id >> 1)  //v
+  );
+
+	return output;
 }

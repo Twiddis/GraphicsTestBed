@@ -21,6 +21,12 @@ struct BEntityTransform
   Mat trans_inv_model;
 };
 
+struct BLight
+{
+  Mat light_vp;
+  Vec3 light_pos;
+  Vec3 camera_pos;
+};
 
 static res::ShaderPipe::Key gShaderProgramDefault;
 static res::ShaderPipe::Key gShaderProgramGBuffer;
@@ -31,11 +37,10 @@ static res::ShaderPipe::Key gShaderProgramShadowLight;
 static res::Camera::Key gCamera;
 
 static res::D3DBuffer::Key gEntityTransformBuffer;
-static res::D3DBuffer::Key gGBufferRenderFlagsBuffer;
 static res::D3DBuffer::Key gLightBuffer;
-static res::D3DBuffer::Key gViewBuffer;
 
 static ID3D11SamplerState *gSamplerState = nullptr;
+static ID3D11RasterizerState *gShadowRasterizerState = nullptr;
 
 static res::Model::Key gModelBunny;
 static res::Model::Key gModelCube;
@@ -44,11 +49,14 @@ static res::Model::Key gModelSphere;
 static res::Texture::Key gTextureWood;
 static res::Texture::Key gTextureFur;
 
+static res::Entity::Key gTestEntity;
 static res::Entity::Key gFloorEntity;
 
 static res::RenderTarget::Key gBuffer;
 
-static res::Light::Key gMainLight;
+//static res::Light::Key gMainLight;
+static res::Light::Key gLight1;
+static res::Light::Key gLight2;
 static std::vector<res::Light::Key> gLights;
 
 static int gGBufferRenderSetting = 0;
@@ -71,23 +79,22 @@ SceneView::SceneView()
   gShaderProgramShadowLight = ResourceLoader::GetInstance()->LoadShaderProgram("ShadowLightShader");
 
   gEntityTransformBuffer = res::D3DBuffer::FindBufferWIthName("EntityTransform.hlsl");
-  gGBufferRenderFlagsBuffer = res::D3DBuffer::FindBufferWIthName("GBufferRenderFlags.hlsl");
   gLightBuffer = res::D3DBuffer::FindBufferWIthName("Light.hlsl");
-  gViewBuffer = res::D3DBuffer::FindBufferWIthName("ViewVector.hlsl");
+
 
   gCamera = res::Camera::Create();
 
-  gMainLight = res::Light::Create();
+  //gMainLight = res::Light::Create();
 
-  //gTestEntity = res::Entity::Create();
-  //{
-  //  gTestEntity->mModel = gModelBunny;
-  //  gTestEntity->mShaderProgram = gShaderProgramGBuffer;
-  //  gTestEntity->mTexture = gTextureWood;
-  //  gTestEntity->mPosition = Vec3(0.0f, 0.5f, -4.0f);
-  //  gTestEntity->mScale = Vec3(1.0f, 1.0f, 1.0);
-  //  gTestEntity->mRotation = Vec3(0.0f, 0.0f, 0.0f);
-  //}
+  gTestEntity = res::Entity::Create();
+  {
+    gTestEntity->mModel = gModelBunny;
+    gTestEntity->mShaderProgram = gShaderProgramGBuffer;
+    gTestEntity->mTexture = gTextureWood;
+    gTestEntity->mPosition = Vec3(0.0f, 0.5f, -4.0f);
+    gTestEntity->mScale = Vec3(3.0f, 3.0f, 3.0f);
+    gTestEntity->mRotation = Vec3(0.0f, 0.0f, 0.0f);
+  }
 
   //gTestEntity2 = res::Entity::Create();
   //{
@@ -119,8 +126,18 @@ SceneView::SceneView()
     gFloorEntity->mRotation = Vec3(0.0f, 0.0f, 0.0f);
   }
 
-  gMainLight = res::Light::Create();
-  gMainLight->mPosition = Vec3(0.0f, 20.0f, 0.0f);
+  
+  gLight1 = res::Light::Create();
+  gLight2 = res::Light::Create();
+
+  gLight1->mPosition = Vec3(14.0f, 10.0f, 15.0f);
+  gLight2->mPosition = Vec3(-14.0f, 10.0f, 15.0f);
+
+  gLight1->mLookAtPosition = Vec3(0.0f, 0.0f, -4.0f);
+  gLight2->mLookAtPosition = Vec3(0.0f, 0.0f, -4.0f);
+
+  gLights.push_back(gLight1);
+  gLights.push_back(gLight2);
 
     // Position
     // Normal
@@ -148,17 +165,39 @@ SceneView::SceneView()
               "SAMPLER STATE CREATION FUCKED UP");
 
   D3D::GetInstance()->mDeviceContext->PSSetSamplers(0, 1, &gSamplerState);
+
+  {
+    D3D11_RASTERIZER_DESC desc;
+
+    desc.AntialiasedLineEnable = false;
+    desc.CullMode = D3D11_CULL_BACK;
+    desc.DepthBias = 0;
+    desc.DepthBiasClamp = 0.0f;
+    desc.DepthClipEnable = false;
+    desc.FillMode = D3D11_FILL_SOLID;
+    desc.FrontCounterClockwise = true; // RH Coordinate System
+    desc.MultisampleEnable = false;
+    desc.ScissorEnable = false;
+    desc.SlopeScaledDepthBias = 0.0f;
+
+    err::HRFail(D3D::GetInstance()->mDevice->CreateRasterizerState(&desc, &gShadowRasterizerState),
+      "Unable to Create Rasterizer State");
+  }
 }
 
 SceneView::~SceneView()
 {
   SafeRelease(gSamplerState);
+  SafeRelease(gShadowRasterizerState);
   ResourceLoader::Shutdown();
 }
 
 void SceneView::StartFrame()
 {
   gBuffer->ClearRenderTarget();
+  
+  gLight1->ClearRenderTarget();
+  gLight2->ClearRenderTarget();
 
   gCamera->GenerateViewMatrix();
   gCamera->GenerateProjectionMatrix();
@@ -166,22 +205,63 @@ void SceneView::StartFrame()
   Input();
 }
 
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+
 void SceneView::Update(float)
 {
+  ID3D11DeviceContext *devcon = D3D::GetInstance()->mDeviceContext;
   BEntityTransform trans_buffer;
+
+    // SHADOW MAP PASS
+    /////////////////////////////////////////////////////////////
+  gShaderProgramShadowLight->Bind();
+
+  ID3D11RasterizerState *rasterizer;
+  devcon->RSGetState(&rasterizer);
+  devcon->RSSetState(gShadowRasterizerState);
+
+  for (auto &light : gLights)
+  {
+    light->GenerateViewMatrix();
+    light->GenerateProjectionMatrix();
+    
+    trans_buffer.view = light->GetViewMatrix().Transpose();
+    trans_buffer.projection = light->GetProjectionMatrix().Transpose();
+
+    light->BindForRender();
+
+    for (auto &entity : res::Entity::GetResources()) {
+      trans_buffer.model = entity.second->GetTransform().Transpose();
+      gEntityTransformBuffer->MapData(&trans_buffer);
+
+      entity.second->mModel->Draw();
+    }
+  }
+
+  devcon->RSSetState(rasterizer);
+
+  //TEMP:
+  //gLight1->BindForRender();
+
+  //trans_buffer.view = gCamera->GetViewMatrix().Transpose();
+  //trans_buffer.projection = gCamera->GetProjectionMatrix().Transpose();
+
+
+  //for (auto &entity : res::Entity::GetResources()) {
+  //  trans_buffer.model = entity.second->GetTransform().Transpose();
+  //  gEntityTransformBuffer->MapData(&trans_buffer);
+
+  //  entity.second->mModel->Draw();
+  //}
+  //////////////////////////////
+
+    // GEOMETRY PASS
+    /////////////////////////////////////////////////////////////
+  gBuffer->BindAsRenderTarget();
 
   trans_buffer.view = gCamera->GetViewMatrix().Transpose();
   trans_buffer.projection = gCamera->GetProjectionMatrix().Transpose();
-  
-    // Shader Pass
-  for (auto &light : gLights)
-  {
-
-  }
-  
-
-    // Draw Entities
-  gBuffer->BindAsRenderTarget();
 
   for (auto &entity : res::Entity::GetResources()) {
     trans_buffer.model = entity.second->GetTransform().Transpose();
@@ -189,7 +269,6 @@ void SceneView::Update(float)
       // You always have to transpose before putting it in a constant buffer,
       // BUUT since this is the inverse transpose...
     trans_buffer.trans_inv_model = entity.second->GetTransform().Invert();
-
 
     if (entity.second->mTexture.IsValid())
       entity.second->mTexture->Bind(0, res::Shader::Pixel);
@@ -202,29 +281,54 @@ void SceneView::Update(float)
     entity.second->mModel->Draw();
   }
 
-    // Draw GBuffer
-  gGBufferRenderFlagsBuffer->MapData(&gGBufferRenderSetting);
-  gLightBuffer->MapData(&(gMainLight->mColor));
-
-  ID3D11DeviceContext *devcon = D3D::GetInstance()->mDeviceContext;
-  gShaderProgramPhong->Bind();
-
-  gBuffer->BindAsResourceView(0);
-
-    // Save old topology
+  // Save old topology
   D3D11_PRIMITIVE_TOPOLOGY topology;
   devcon->IAGetPrimitiveTopology(&topology);
   devcon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-  // Render full screen quad:
-  //   This works without binding any buffers because the FSQ_renderer shader
-  //   only uses "Vertex ID" to determine uv coords, pos, etc.
+    // GLOBAL LIGHTING PASS
+    /////////////////////////////////////////////////////////////
+  gShaderProgramPhong->Bind();
+  gBuffer->BindAsResourceView(0);
+
+  BLight light_buffer;
+
+  light_buffer.light_pos = Vec3(0.0f, 30.0f, 0.0f);
+  light_buffer.camera_pos = gCamera->mPosition;
+
+  gLightBuffer->MapData(&light_buffer);
+
   D3D::GetInstance()->BindRenderTarget();
+
+
+
   devcon->Draw(4, 0);
+
+    // LOCAL LIGHTING PASS
+    /////////////////////////////////////////////////////////////
+
+  gShaderProgramLocalLight->Bind();
+
+  for (auto &light : gLights)
+  {
+    light->BindForResource(4);
+    D3D::GetInstance()->BindRenderTarget();
+
+    light_buffer.light_pos = light->mPosition;
+    light_buffer.light_vp = (light->GetViewMatrix() * light->GetProjectionMatrix()).Transpose();
+    
+    gLightBuffer->MapData(&light_buffer);
+    devcon->Draw(4, 0);
+  }
+
 
   // Reset old topology
   devcon->IASetPrimitiveTopology(topology);
 }
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+
+
 void SceneView::EndFrame()
 {
     // Reset the matrix flag for entities

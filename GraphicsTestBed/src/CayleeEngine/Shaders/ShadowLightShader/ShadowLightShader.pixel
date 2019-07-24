@@ -1,10 +1,11 @@
 #include "../InputLayouts/default.hlsl"
 
-float4 main(float depth : DEPTH) : SV_TARGET
+float4 main(float4 p : SV_POSITION) : SV_TARGET
 {
-  float d2 = depth * depth;
-  float d3 = d2 * depth;
-  float d4 = d3 * depth;
+  float d1 = p.w;
+  float d2 = d1 * p.w;
+  float d3 = d2 * p.w;
+  float d4 = d3 * p.w;
 
-  return float4(depth, d2, d3, d4);
+  return float4(d1, d2, d3, d4);
 }

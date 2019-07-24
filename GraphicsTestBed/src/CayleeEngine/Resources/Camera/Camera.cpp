@@ -21,9 +21,7 @@ namespace CayleeEngine::res
 
   void Camera::GenerateProjectionMatrix()
   {
-  //  mProjectionMatrix = Mat::Identity;
-    mProjectionMatrix = Mat::CreatePerspectiveFieldOfView(3.14f * mScale.y / mScale.x * .8f, mScale.x / mScale.y, 0.1f, 2000.0f);
-//    mProjectionMatrix = Mat::CreatePerspectiveFieldOfView(3.14f / 1.2f, mScale.x/mScale.y, 0.1f, 1000.0f);
+    mProjectionMatrix = Mat::CreatePerspectiveFieldOfView(3.14f * mScale.y / mScale.x * 0.8f, mScale.x / mScale.y, 0.1f, 100.0f);
   }
 
   void Camera::RotateCamera(float yaw, float pitch)

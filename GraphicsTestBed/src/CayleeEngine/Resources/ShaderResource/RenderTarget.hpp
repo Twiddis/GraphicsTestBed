@@ -26,6 +26,7 @@ public:
   };
 
 private:
+  int mResX, mResY;
 
   BindStage mBindStage;
   size_t mStartingSlot;

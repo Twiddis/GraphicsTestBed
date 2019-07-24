@@ -1,6 +1,8 @@
 #pragma once
 #include "Resources/ResourceBase.hpp"
 
+#include "Resources/ShaderResource/RenderTarget.hpp"
+
 namespace CayleeEngine::res
 {
 class Light : public ResourceBase<Light>
@@ -16,29 +18,25 @@ public:
 
   void Resize() {}
 
-  void BindAsRenderTarget();
-  void BindAsResource();
+  void ClearRenderTarget();
+
+  void BindForRender();
+  void BindForResource(UINT slot);
 
   void GenerateViewMatrix();
   void GenerateProjectionMatrix();
 
   constexpr Mat& GetViewMatrix() { return mViewMatrix; };
   constexpr Mat& GetProjectionMatrix() { return mProjectionMatrix; }
-
+  
 private:
-  void CreateDepthBuffer(size_t res_x, size_t res_y);
 
-private:
   Mat mViewMatrix;
   Mat mProjectionMatrix;
 
-  ID3D11DepthStencilView *mDepthStencilView;
-  ID3D11DepthStencilState *mDepthStencilState;
+  res::RenderTarget::Key mShadowMap;
 
-  ID3D11RenderTargetView *mRenderTargetView;
-  ID3D11ShaderResourceView *mShaderResourceView;
-
-  ID3D11RasterizerState *mRasterizerState;
+;
   D3D11_VIEWPORT mViewport;
 
 };
