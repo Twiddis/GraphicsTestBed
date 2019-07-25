@@ -28,9 +28,12 @@ struct BLight
   Vec3 camera_pos;
 };
 
+
+static const int KERNAL_DIAMETER = 33;
+static double gGaussianWeights[KERNAL_DIAMETER] = { 0 };
 struct BBlurFilter
 {
-  Vec4 weights[5];
+  Vec4 weights[KERNAL_DIAMETER];
   int max_output_size;
   int max_input_size;
 };
@@ -41,6 +44,7 @@ static res::ShaderPipe::Key gShaderProgramPhong;
 static res::ShaderPipe::Key gShaderProgramLocalLight;
 static res::ShaderPipe::Key gShaderProgramShadowLight;
 static res::ShaderPipe::Key gShaderProgramHorizontalBlur;
+static res::ShaderPipe::Key gShaderProgramVerticalBlur;
 
 static res::Camera::Key gCamera;
 
@@ -60,10 +64,14 @@ static res::Texture::Key gTextureWood;
 static res::Texture::Key gTextureFur;
 
 static res::Entity::Key gTestEntity;
+static res::Entity::Key gTestEntity2;
+static res::Entity::Key gTestEntity3;
+
 static res::Entity::Key gFloorEntity;
 
 static res::RenderTarget::Key gBuffer;
 static res::RenderTarget::Key gBlurOutputBuffer;
+static res::RenderTarget::Key gBlurOutputBuffer2;
 
 //static res::Light::Key gMainLight;
 static res::Light::Key gLight1;
@@ -71,6 +79,7 @@ static res::Light::Key gLight2;
 static std::vector<res::Light::Key> gLights;
 
 static int gGBufferRenderSetting = 0;
+static int gRenderSetting = 0;
 
 SceneView::SceneView()
 {
@@ -89,6 +98,7 @@ SceneView::SceneView()
   gShaderProgramLocalLight = ResourceLoader::GetInstance()->LoadShaderProgram("LocalLightShader");
   gShaderProgramShadowLight = ResourceLoader::GetInstance()->LoadShaderProgram("ShadowLightShader");
   gShaderProgramHorizontalBlur = ResourceLoader::GetInstance()->LoadShaderProgram("HorizontalBlurFilter");
+  gShaderProgramVerticalBlur = ResourceLoader::GetInstance()->LoadShaderProgram("VerticalBlurFilter");
 
   gEntityTransformBuffer = res::D3DBuffer::FindBufferWIthName("EntityTransform.hlsl");
   gLightBuffer = res::D3DBuffer::FindBufferWIthName("Light.hlsl");
@@ -96,37 +106,39 @@ SceneView::SceneView()
 
   gCamera = res::Camera::Create();
 
+  gCamera->mPosition = Vec3(0.0f, 10.0f, 15.0f);
+  gCamera->RotateCamera(0.0f, -0.8f);
   //gMainLight = res::Light::Create();
 
   gTestEntity = res::Entity::Create();
   {
     gTestEntity->mModel = gModelBunny;
     gTestEntity->mShaderProgram = gShaderProgramGBuffer;
-    gTestEntity->mTexture = gTextureWood;
+    gTestEntity->mTexture = gTextureFur;
     gTestEntity->mPosition = Vec3(0.0f, 0.5f, -4.0f);
     gTestEntity->mScale = Vec3(3.0f, 3.0f, 3.0f);
     gTestEntity->mRotation = Vec3(0.0f, 0.0f, 0.0f);
   }
 
-  //gTestEntity2 = res::Entity::Create();
-  //{
-  //  gTestEntity2->mModel = gModelBunny;
-  //  gTestEntity2->mShaderProgram = gShaderProgramGBuffer;
-  //  gTestEntity2->mTexture = gTextureWood;
-  //  gTestEntity2->mPosition = Vec3(1.0f, 2.5f, 0.0f);
-  //  gTestEntity2->mScale = Vec3(1.0f, 1.0f, 1.0);
-  //  gTestEntity2->mRotation = Vec3(1.0f, 0.0f, 0.0f);
-  //}
+  gTestEntity2 = res::Entity::Create();
+  {
+    gTestEntity2->mModel = gModelBunny;
+    gTestEntity2->mShaderProgram = gShaderProgramGBuffer;
+    gTestEntity2->mTexture = gTextureFur;
+    gTestEntity2->mPosition = Vec3(0.0f, 0.5f, 4.0f);
+    gTestEntity2->mScale = Vec3(4.0f, 4.0f, 4.0f);
+    gTestEntity2->mRotation = Vec3(0.0f, 1.0f, 0.0f);
+  }
 
-  //gTestEntity3 = res::Entity::Create();
-  //{
-  //  gTestEntity3->mModel = gModelBunny;
-  //  gTestEntity3->mShaderProgram = gShaderProgramGBuffer;
-  //  gTestEntity3->mTexture = gTextureWood;
-  //  gTestEntity3->mPosition = Vec3(3.0f, 0.5f, 3.0f);
-  //  gTestEntity3->mScale = Vec3(1.0f, 1.0f, 1.0);
-  //  gTestEntity3->mRotation = Vec3(0.0f, 2.0f, 0.0f);
-  //}
+  gTestEntity3 = res::Entity::Create();
+  {
+    gTestEntity3->mModel = gModelBunny;
+    gTestEntity3->mShaderProgram = gShaderProgramGBuffer;
+    gTestEntity3->mTexture = gTextureFur;
+    gTestEntity3->mPosition = Vec3(0.0f, 0.5f, 12.0f);
+    gTestEntity3->mScale = Vec3(5.0f, 5.0f, 5.0f);
+    gTestEntity3->mRotation = Vec3(0.0f, 3.0f, 0.0f);
+  }
 
   gFloorEntity = res::Entity::Create();
   {
@@ -157,6 +169,7 @@ SceneView::SceneView()
     // Specular
   gBuffer = res::RenderTarget::Create(4, 1920, 1080);
   gBlurOutputBuffer = res::RenderTarget::Create(1, 1024, 1024);
+  gBlurOutputBuffer2 = res::RenderTarget::Create(1, 1024, 1024);
 
   D3D11_SAMPLER_DESC sampler_desc;
   {
@@ -196,6 +209,22 @@ SceneView::SceneView()
     err::HRFail(D3D::GetInstance()->mDevice->CreateRasterizerState(&desc, &gShadowRasterizerState),
       "Unable to Create Rasterizer State");
   }
+
+  // Calculate gaussian weights
+  double sum = 0.0f;
+
+  for (int i = 0; i < KERNAL_DIAMETER; ++i)
+  {
+    double exp = static_cast<double>(i - KERNAL_DIAMETER / 2);
+    static const double s = static_cast<float>(KERNAL_DIAMETER / 2) / 2.0f;
+
+    gGaussianWeights[i] = std::exp(-1.0f * (exp * exp) / (2 * s * s));
+    sum += gGaussianWeights[i];
+  }
+
+
+  for (size_t i = 0; i < KERNAL_DIAMETER; ++i)
+    gGaussianWeights[i] /= sum;
 }
 
 SceneView::~SceneView()
@@ -211,6 +240,9 @@ void SceneView::StartFrame()
   
   gLight1->ClearRenderTarget();
   gLight2->ClearRenderTarget();
+
+  gBlurOutputBuffer->ClearRenderTarget();
+  gBlurOutputBuffer2->ClearRenderTarget();
 
   gCamera->GenerateViewMatrix();
   gCamera->GenerateProjectionMatrix();
@@ -267,7 +299,7 @@ void SceneView::Update(float)
 
       // You always have to transpose before putting it in a constant buffer,
       // BUUT since this is the inverse transpose...
-    trans_buffer.trans_inv_model = entity.second->GetTransform().Invert();
+    trans_buffer.trans_inv_model = (entity.second->GetTransform()).Invert();
 
     if (entity.second->mTexture.IsValid())
       entity.second->mTexture->Bind(0, res::Shader::Pixel);
@@ -299,43 +331,53 @@ void SceneView::Update(float)
 
   D3D::GetInstance()->BindRenderTarget();
 
-
-
   devcon->Draw(4, 0);
 
     // LOCAL LIGHTING PASS
     /////////////////////////////////////////////////////////////
 
   BBlurFilter blur_filter_buffer;
-  blur_filter_buffer.weights[0] = Vec4(0.2f, 0.2f, 0.2f, 0.2f);
-  blur_filter_buffer.weights[1] = Vec4(0.2f, 0.2f, 0.2f, 0.2f);
-  blur_filter_buffer.weights[2] = Vec4(0.2f, 0.2f, 0.2f, 0.2f);
-  blur_filter_buffer.weights[3] = Vec4(0.2f, 0.2f, 0.2f, 0.2f);
-  blur_filter_buffer.weights[4] = Vec4(0.2f, 0.2f, 0.2f, 0.2f);
+  {
 
-  blur_filter_buffer.max_input_size = 1024;
-  blur_filter_buffer.max_output_size = 1024;
+    for (int i = 0; i < KERNAL_DIAMETER; ++i) {
+      blur_filter_buffer.weights[i] = Vec4(static_cast<float>(gGaussianWeights[i]));
+    }
+    blur_filter_buffer.max_input_size = 1024;
+    blur_filter_buffer.max_output_size = 1024;
+  }
 
   gBlurFilterBuffer->MapData(&blur_filter_buffer);
 
   for (auto &light : gLights)
   {
       // BLUR SHADOW-MAP STEP
+      //////////////////////
     light->BindForResource(0, true);
     gBlurOutputBuffer->BindAsUnorderedAccessView(0);
 
     gShaderProgramHorizontalBlur->Bind();
 
     devcon->Dispatch(1024 / 128, 1024, 1);
-    
-    gBlurOutputBuffer->BindAsResourceView(4);
+      ///////////////////
+    gBlurOutputBuffer->BindAsResourceView(0, true);
+    gBlurOutputBuffer2->BindAsUnorderedAccessView(0);
+
+    gShaderProgramVerticalBlur->Bind();
+
+    devcon->Dispatch(1024, 1024 / 128, 1);
+      /////////////////////////
+
+    gBlurOutputBuffer2->BindAsResourceView(4);
     gBuffer->BindAsResourceView(0);
 
     gShaderProgramLocalLight->Bind();
 
     D3D::GetInstance()->BindRenderTarget();
-
+    
+  //  light->BindForResource(4, false);
+    gBlurOutputBuffer2->BindAsResourceView(4);
     light_buffer.light_pos = light->mPosition;
+
     light_buffer.light_vp = (light->GetViewMatrix() * light->GetProjectionMatrix()).Transpose();
     
     gLightBuffer->MapData(&light_buffer);
@@ -343,6 +385,14 @@ void SceneView::Update(float)
   }
 
 
+
+
+  //gLight1->BindForResource(0, false);
+  ////gBlurOutputBuffer2->BindAsResourceView(0);
+
+  //gShaderProgramDefault->Bind();
+  //D3D::GetInstance()->BindRenderTarget();
+  //devcon->Draw(4, 0);
   // Reset old topology
   devcon->IASetPrimitiveTopology(topology);
 }

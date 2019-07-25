@@ -11,14 +11,14 @@ RWTexture2D<float4> output_texture : register(u0);
 static const uint SHM_SIZE = GROUP_SIZE + HALF_KERNAL * 2 + 1;
 groupshared float4 shared_memory[SHM_SIZE];
 
-// Dispatch(GROUP_SIZE / W, H, 1)
+// Dispatch(W, H / GROUP_SIZE, 1)
 [numthreads(GROUP_SIZE, 1, 1)]
 void main(uint3 group_id : SV_GroupID, uint group_index : SV_GroupIndex)
 {
     // Find this thread's assigned position
   int2 gpos;
-  gpos.x = clamp(group_id.x * GROUP_SIZE + group_index - HALF_KERNAL, 0, blur_input_size);
-  gpos.y = group_id.y;
+  gpos.x = group_id.x;
+  gpos.y = clamp(group_id.y * GROUP_SIZE + group_index - HALF_KERNAL, 0, blur_input_size);
 
     // Read in assigned texel(s)
   shared_memory[group_index] = input_texture.Load(int3(gpos, 0));
@@ -27,7 +27,7 @@ void main(uint3 group_id : SV_GroupID, uint group_index : SV_GroupIndex)
     // Note: we dont have to clamp here, because loading an outof-bounds
     //       returns 0
   if (group_index < HALF_KERNAL * 2)
-    shared_memory[group_index + GROUP_SIZE] = input_texture.Load(int3(gpos.x + GROUP_SIZE, gpos.y, 0));
+    shared_memory[group_index + GROUP_SIZE] = input_texture.Load(int3(gpos.x, gpos.y  + GROUP_SIZE, 0));
 
   GroupMemoryBarrierWithGroupSync();
 
