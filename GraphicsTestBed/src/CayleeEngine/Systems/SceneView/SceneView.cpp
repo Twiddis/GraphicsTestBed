@@ -28,16 +28,26 @@ struct BLight
   Vec3 camera_pos;
 };
 
+struct BBlurFilter
+{
+  Vec4 weights[5];
+  int max_output_size;
+  int max_input_size;
+};
+
 static res::ShaderPipe::Key gShaderProgramDefault;
 static res::ShaderPipe::Key gShaderProgramGBuffer;
 static res::ShaderPipe::Key gShaderProgramPhong;
 static res::ShaderPipe::Key gShaderProgramLocalLight;
 static res::ShaderPipe::Key gShaderProgramShadowLight;
+static res::ShaderPipe::Key gShaderProgramHorizontalBlur;
 
 static res::Camera::Key gCamera;
 
 static res::D3DBuffer::Key gEntityTransformBuffer;
 static res::D3DBuffer::Key gLightBuffer;
+
+static res::D3DBuffer::Key gBlurFilterBuffer;
 
 static ID3D11SamplerState *gSamplerState = nullptr;
 static ID3D11RasterizerState *gShadowRasterizerState = nullptr;
@@ -53,6 +63,7 @@ static res::Entity::Key gTestEntity;
 static res::Entity::Key gFloorEntity;
 
 static res::RenderTarget::Key gBuffer;
+static res::RenderTarget::Key gBlurOutputBuffer;
 
 //static res::Light::Key gMainLight;
 static res::Light::Key gLight1;
@@ -77,10 +88,11 @@ SceneView::SceneView()
   gShaderProgramPhong = ResourceLoader::GetInstance()->LoadShaderProgram("PhongShader");
   gShaderProgramLocalLight = ResourceLoader::GetInstance()->LoadShaderProgram("LocalLightShader");
   gShaderProgramShadowLight = ResourceLoader::GetInstance()->LoadShaderProgram("ShadowLightShader");
+  gShaderProgramHorizontalBlur = ResourceLoader::GetInstance()->LoadShaderProgram("HorizontalBlurFilter");
 
   gEntityTransformBuffer = res::D3DBuffer::FindBufferWIthName("EntityTransform.hlsl");
   gLightBuffer = res::D3DBuffer::FindBufferWIthName("Light.hlsl");
-
+  gBlurFilterBuffer = res::D3DBuffer::FindBufferWIthName("BlurFilterBuffer.hlsl");
 
   gCamera = res::Camera::Create();
 
@@ -144,6 +156,7 @@ SceneView::SceneView()
     // Diffuse
     // Specular
   gBuffer = res::RenderTarget::Create(4, 1920, 1080);
+  gBlurOutputBuffer = res::RenderTarget::Create(1, 1024, 1024);
 
   D3D11_SAMPLER_DESC sampler_desc;
   {
@@ -241,20 +254,6 @@ void SceneView::Update(float)
 
   devcon->RSSetState(rasterizer);
 
-  //TEMP:
-  //gLight1->BindForRender();
-
-  //trans_buffer.view = gCamera->GetViewMatrix().Transpose();
-  //trans_buffer.projection = gCamera->GetProjectionMatrix().Transpose();
-
-
-  //for (auto &entity : res::Entity::GetResources()) {
-  //  trans_buffer.model = entity.second->GetTransform().Transpose();
-  //  gEntityTransformBuffer->MapData(&trans_buffer);
-
-  //  entity.second->mModel->Draw();
-  //}
-  //////////////////////////////
 
     // GEOMETRY PASS
     /////////////////////////////////////////////////////////////
@@ -307,11 +306,33 @@ void SceneView::Update(float)
     // LOCAL LIGHTING PASS
     /////////////////////////////////////////////////////////////
 
-  gShaderProgramLocalLight->Bind();
+  BBlurFilter blur_filter_buffer;
+  blur_filter_buffer.weights[0] = Vec4(0.2f, 0.2f, 0.2f, 0.2f);
+  blur_filter_buffer.weights[1] = Vec4(0.2f, 0.2f, 0.2f, 0.2f);
+  blur_filter_buffer.weights[2] = Vec4(0.2f, 0.2f, 0.2f, 0.2f);
+  blur_filter_buffer.weights[3] = Vec4(0.2f, 0.2f, 0.2f, 0.2f);
+  blur_filter_buffer.weights[4] = Vec4(0.2f, 0.2f, 0.2f, 0.2f);
+
+  blur_filter_buffer.max_input_size = 1024;
+  blur_filter_buffer.max_output_size = 1024;
+
+  gBlurFilterBuffer->MapData(&blur_filter_buffer);
 
   for (auto &light : gLights)
   {
-    light->BindForResource(4);
+      // BLUR SHADOW-MAP STEP
+    light->BindForResource(0, true);
+    gBlurOutputBuffer->BindAsUnorderedAccessView(0);
+
+    gShaderProgramHorizontalBlur->Bind();
+
+    devcon->Dispatch(1024 / 128, 1024, 1);
+    
+    gBlurOutputBuffer->BindAsResourceView(4);
+    gBuffer->BindAsResourceView(0);
+
+    gShaderProgramLocalLight->Bind();
+
     D3D::GetInstance()->BindRenderTarget();
 
     light_buffer.light_pos = light->mPosition;

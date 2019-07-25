@@ -1,0 +1,47 @@
+#include "../ConstantBuffers/BlurFilterBuffer.hlsl"
+
+BLUR_FILTER_BUFFER(0);
+
+Texture2D<float4> input_texture : register(t0);
+RWTexture2D<float4> output_texture : register(u0);
+
+#define HALF_KERNAL 2
+#define GROUP_SIZE 128
+
+static const uint SHM_SIZE = GROUP_SIZE + HALF_KERNAL * 2 + 1;
+groupshared float4 shared_memory[SHM_SIZE];
+
+// Dispatch(GROUP_SIZE / W, H, 1)
+[numthreads(GROUP_SIZE, 1, 1)]
+void main(uint3 group_id : SV_GroupID, uint group_index : SV_GroupIndex)
+{
+    // Find this thread's assigned position
+  int2 gpos;
+  gpos.x = clamp(group_id.x * GROUP_SIZE + group_index - HALF_KERNAL, 0, blur_input_size.x);
+  gpos.y = group_id.y;
+
+    // Read in assigned texel(s)
+  shared_memory[group_index] = input_texture.Load(int3(gpos, 0));
+
+    // The first 2w threads get to load an extra pixel!
+    // Note: we dont have to clamp here, because loading an outof-bounds
+    //       returns 0
+  if (group_index < HALF_KERNAL * 2)
+    shared_memory[group_index + GROUP_SIZE] = input_texture.Load(int3(gpos.x + GROUP_SIZE, gpos.y, 0));
+
+  GroupMemoryBarrierWithGroupSync();
+
+    // AFter everyone finished loading their texels, do actual work
+  int range_min = group_index;
+  int range_max = group_index + HALF_KERNAL * 2;
+
+  float4 weighted_value = float4(0.0f, 0.0f, 0.0f, 0.0f);
+  int weight_index = 0;
+
+  [unroll]
+  for (int i = range_min; i <= range_max; ++i)
+    weighted_value += shared_memory[i] * blur_weights[weight_index++];
+
+    // Write to output
+  output_texture[gpos] = weighted_value;
+}

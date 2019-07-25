@@ -7,6 +7,7 @@ namespace CayleeEngine::res
 {
   static ID3D11ShaderResourceView *NULL_SRV[128] = { nullptr };
   static ID3D11RenderTargetView *NULL_RTV[8] = { nullptr };
+  static ID3D11UnorderedAccessView *NULL_UAV[8] = { nullptr };
 
   const CD3D11_DEPTH_STENCIL_DESC DEFAULT_DEPTH_STENCIL_DESC{
     TRUE,                       // Depth: Enable
@@ -36,7 +37,8 @@ namespace CayleeEngine::res
                                    mBlendState(nullptr),
                                    mTextures(num_textures, nullptr),
                                    mShaderResourceViews(num_textures, nullptr),
-                                   mRenderTargetViews(num_textures, nullptr)
+                                   mRenderTargetViews(num_textures, nullptr),
+                                   mUnorderedAccessViews(num_textures, nullptr)
   {
     BuildTextures(res_x, res_y);
   }
@@ -55,7 +57,8 @@ namespace CayleeEngine::res
 
     devcon->PSSetShaderResources(mStartingSlot, mNumTextures, NULL_SRV);
     devcon->OMSetRenderTargets(mNumTextures, NULL_RTV, mDepthStencilView);
-
+    devcon->CSSetUnorderedAccessViews(mStartingSlot, mNumTextures, NULL_UAV, nullptr);
+    
     mBindStage = BindStage::UNBOUND;
   }
 
@@ -80,7 +83,7 @@ namespace CayleeEngine::res
   {
     ID3D11DeviceContext *devcon = D3D::GetInstance()->mDeviceContext;
 
-    if (mBindStage == BindStage::RESOURCE)
+    if (mBindStage == BindStage::RESOURCE || mBindStage == BindStage::UAV)
       Unbind();
 
     D3D11_VIEWPORT vp;
@@ -100,16 +103,32 @@ namespace CayleeEngine::res
     mBindStage = BindStage::TARGET;
   }
 
-  void RenderTarget::BindAsResourceView(size_t starting_slot)
+  void RenderTarget::BindAsUnorderedAccessView(size_t starting_slot)
   {
     ID3D11DeviceContext *devcon = D3D::GetInstance()->mDeviceContext;
 
-    if (mBindStage == BindStage::TARGET)
+    if (mBindStage == BindStage::RESOURCE || mBindStage == BindStage::TARGET)
       Unbind();
 
     mStartingSlot = starting_slot;
 
-    devcon->PSSetShaderResources(starting_slot, mNumTextures, mShaderResourceViews.data());
+    devcon->CSSetUnorderedAccessViews(0, mNumTextures, mUnorderedAccessViews.data(), nullptr);
+    mBindStage = BindStage::UAV;
+  }
+
+  void RenderTarget::BindAsResourceView(size_t starting_slot, bool is_compute)
+  {
+    ID3D11DeviceContext *devcon = D3D::GetInstance()->mDeviceContext;
+
+    if (mBindStage == BindStage::TARGET || mBindStage == BindStage::UAV)
+      Unbind();
+
+    mStartingSlot = starting_slot;
+
+    if (!is_compute)
+      devcon->PSSetShaderResources(starting_slot, mNumTextures, mShaderResourceViews.data());
+    else
+      devcon->CSSetShaderResources(starting_slot, mNumTextures, mShaderResourceViews.data());
 
     mBindStage = BindStage::RESOURCE;
   }
@@ -128,6 +147,9 @@ namespace CayleeEngine::res
       SafeRelease(view);
 
     for (auto &view : mRenderTargetViews)
+      SafeRelease(view);
+
+    for (auto &view : mUnorderedAccessViews)
       SafeRelease(view);
   }
 
@@ -185,7 +207,7 @@ namespace CayleeEngine::res
     D3D11_TEXTURE2D_DESC desc;
     {
       desc.ArraySize  = mNumTextures;
-      desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+      desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET | D3D11_BIND_UNORDERED_ACCESS;
       desc.CPUAccessFlags = 0;
       desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT; 
       desc.Height = res_y;
@@ -212,10 +234,18 @@ namespace CayleeEngine::res
       rtv_desc.Texture2D.MipSlice = 0;
     }
 
+    D3D11_UNORDERED_ACCESS_VIEW_DESC uav_desc;
+    {
+      uav_desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+      uav_desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+      uav_desc.Texture2D.MipSlice = 0;
+    }
+
     for (size_t i = 0; i < mNumTextures; ++i) {
       err::HRWarn(dev->CreateTexture2D(&desc, nullptr, &mTextures[i]), "RenderTarget Failure");
       err::HRWarn(dev->CreateShaderResourceView(mTextures[i], &srv_desc, &mShaderResourceViews[i]), "RenderTarget Failure");
       err::HRWarn(dev->CreateRenderTargetView(mTextures[i], &rtv_desc, &mRenderTargetViews[i]), "RenderTarget Failure");
+      err::HRWarn(dev->CreateUnorderedAccessView(mTextures[i], &uav_desc, &mUnorderedAccessViews[i]), "UAV OFFLINE");
     }
 
     for (auto &tex : mTextures)

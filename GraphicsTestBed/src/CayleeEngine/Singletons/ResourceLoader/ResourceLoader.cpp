@@ -7,6 +7,7 @@
 #include "Singletons/D3D/D3D.hpp"
 #include "Resources/Shader/VertexShader.hpp"
 #include "Resources/Shader/PixelShader.hpp"
+#include "Resources/Shader/Computeshader.hpp"
 
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -178,6 +179,21 @@ res::ShaderPipe::Key ResourceLoader::LoadShaderProgram(const std::string &folder
     }
 
     shader_pipe->AttachShader(res::Shader::Pixel, pixel_shader);
+  }
+
+  if (b_compute) {
+    res::ComputeShader::Key compute_shader = res::ComputeShader::Create();
+    compute_shader->LoadShader(compute_path);
+
+    //
+    compute_shader->SearchAndAssignBuffers(compute_path);
+    //
+    if (!compute_shader.IsValid()) {
+      err::AssertWarn(false, "Warning! Unable to create compute_shader shader: %S", compute_path.c_str());
+      compute_shader.Destroy();
+    }
+
+    shader_pipe->AttachShader(res::Shader::Compute, compute_shader);
   }
 
   return shader_pipe;

@@ -15,13 +15,15 @@ public:
   void Resize(int res_x, int res_y);
 
   void BindAsRenderTarget();
-  void BindAsResourceView(size_t starting_slot);
+  void BindAsUnorderedAccessView(size_t starting_slot);
+  void BindAsResourceView(size_t starting_slot, bool is_compute = false);
 
   enum BindStage
   {
     UNBOUND,
     RESOURCE,
     TARGET,
+    UAV,
     COUNT
   };
 
@@ -39,11 +41,14 @@ private:
   ID3D11Texture2D *mDepthStencil;
   ID3D11DepthStencilView *mDepthStencilView;
   ID3D11DepthStencilState *mDepthStencilState;
+
   ID3D11BlendState *mBlendState;
 
   std::vector<ID3D11Texture2D*> mTextures;
   std::vector<ID3D11ShaderResourceView*> mShaderResourceViews;
   std::vector<ID3D11RenderTargetView*> mRenderTargetViews;
+  std::vector<ID3D11UnorderedAccessView*> mUnorderedAccessViews;
+
 };
 
 }

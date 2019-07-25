@@ -56,9 +56,9 @@ void Light::BindForRender()
   
 }
 
-void Light::BindForResource(UINT slot)
+void Light::BindForResource(UINT slot, bool is_compute)
 {
-  mShadowMap->BindAsResourceView(slot);
+  mShadowMap->BindAsResourceView(slot, is_compute);
 }
 
 void Light::GenerateViewMatrix()

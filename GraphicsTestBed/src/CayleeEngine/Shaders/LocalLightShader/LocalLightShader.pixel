@@ -13,6 +13,25 @@ SamplerState gSampler : register(s0);
 Texture2D<float4> gGBuffer[4] : register(t0);
 Texture2D<float4> gShadowMap : register(t4);
 
+float2 quadratic(float3 constants)
+{
+	float a = constants.z;
+	float b = constants.y;
+	float c = constants.x;
+
+	float discriminant = sqrt(b*b - 4*a*c);
+
+	float2 roots;
+	roots.x = (-1 * b - discriminant) / (2*a);
+	roots.y = (-1 * b + discriminant) / (2*a);
+
+	float2 return_value;
+	return_value.x = min(roots.x, roots.y);
+	return_value.y = max(roots.x, roots.y);
+
+	return return_value;
+}
+
 float4 main(FSQ_Vertex vin) : SV_TARGET
 {
   float4 world_pos = gGBuffer[0].Sample(gSampler, vin.uv);
@@ -28,15 +47,42 @@ float4 main(FSQ_Vertex vin) : SV_TARGET
 	shadow_index.y = 0.5f - (light_space_pos.y / light_space_pos.w * 0.5f);
 	float pixel_depth = light_space_pos.w;// / light_space_pos.z;
 
-		// Check if in bounds of shadow map
-	if (pixel_depth > 0.0f && saturate(shadow_index.x) != 0 && saturate(shadow_index.y) != 0)
-	{
-		float light_depth = gShadowMap.Sample(gSampler, shadow_index).x;
+		// Calculate the shadow intensity
+		// bias vector = 0.max_depth / 2
+	const float4 bias_vector = float4(50.0f, 50.0f, 50.0f, 50.0f);
+	const float bias = 0.003f;
 
-		if (pixel_depth > light_depth + 0.1f)
-			return float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 moments = gShadowMap.Sample(gSampler, shadow_index);
+
+	float4 m = (1 - bias) * moments + bias * bias_vector;
+
+		// Cramer's rule
+	float3 A = float3(1.0f, m.x, m.y);
+	float3 B = float3(m.x, m.y, m.z);
+	float3 C = float3(m.y, m.z, m.w);
+	float3 Z = float3(1.0f, pixel_depth * pixel_depth, pixel_depth);
+
+	float d = determinant(float3x3(A, B, C));
+	float c1 = determinant(float3x3(Z, B, C)) / d;
+	float c2 = determinant(float3x3(A, Z, C)) / d;
+	float c3 = determinant(float3x3(A, B, Z)) / d;
+
+	float2 roots = quadratic(float3(c1, c2, c3));
+
+		// More magic shit to calculate shadow_intensity
+	float shadow_intensity = 0.0f;
+
+	if (pixel_depth <= roots.x)
+		shadow_intensity = 0.0f;
+	else if (pixel_depth <= roots.y) {
+		shadow_intensity = pixel_depth * roots.y - m.x * (pixel_depth + roots.y) + m.y;
+		shadow_intensity /= ((roots.y - roots.x) * (pixel_depth - roots.x));
 	}
-
+	else {
+		shadow_intensity = roots.x * roots.y - m.x * (roots.x + roots.y) + m.y;
+		shadow_intensity /= ((pixel_depth - roots.x) * (pixel_depth - roots.y));
+		shadow_intensity = 1.0f - shadow_intensity;
+	}
 
 	float3 light_dir = normalize(light_pos - world_pos.xyz);
 
@@ -49,6 +95,6 @@ float4 main(FSQ_Vertex vin) : SV_TARGET
 	float reflect_angle = saturate(dot(light_reflected, view_vector));
 
 		// camera_pos.w = roughness
-	return diffuse_color + (light_color * pow(reflect_angle, 100.0f) * specular); // * attenuation
+	return (1.0f - shadow_intensity) * (diffuse_color + (light_color * pow(reflect_angle, 100.0f) * specular)); // * attenuation
 
 }

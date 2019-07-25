@@ -1,0 +1,54 @@
+#include "../InputLayouts/default.hlsl"
+#include "../ConstantBuffers/Light.hlsl"
+
+LIGHT(0);
+
+struct FSQ_Vertex
+{
+	float4 pos : SV_POSITION;
+	float2 uv  : TEXCOORD;
+};
+
+SamplerState gSampler : register(s0);
+Texture2D<float4> gGBuffer[4] : register(t0);
+Texture2D<float4> gShadowMap : register(t4);
+
+float4 main(FSQ_Vertex vin) : SV_TARGET
+{
+  float4 world_pos = gGBuffer[0].Sample(gSampler, vin.uv);
+  float4 normal =    gGBuffer[1].Sample(gSampler, vin.uv);
+	float4 diffuse =   gGBuffer[2].Sample(gSampler, vin.uv);
+  float4 specular =  gGBuffer[3].Sample(gSampler, vin.uv);
+
+  const float4 light_color = float4(1.0f, 1.0f, 1.0f, 1.0f) ;
+
+	float4 light_space_pos = mul(float4(world_pos.xyz, 1.0f), light_vp);
+	float2 shadow_index;
+	shadow_index.x = 0.5f + (light_space_pos.x / light_space_pos.w * 0.5f);
+	shadow_index.y = 0.5f - (light_space_pos.y / light_space_pos.w * 0.5f);
+	float pixel_depth = light_space_pos.w;// / light_space_pos.z;
+
+		// Check if in bounds of shadow map
+	if (pixel_depth > 0.0f && saturate(shadow_index.x) != 0 && saturate(shadow_index.y) != 0)
+	{
+		float light_depth = gShadowMap.Sample(gSampler, shadow_index).x;
+
+		if (pixel_depth > light_depth + 0.1f)
+			return float4(0.0f, 0.0f, 0.0f, 0.0f);
+	}
+
+
+	float3 light_dir = normalize(light_pos - world_pos.xyz);
+
+	float light_angle = saturate(dot(light_dir, normal.xyz));
+	float4 diffuse_color = light_color * light_angle * diffuse;// * attenuation;
+
+	float3 light_reflected = reflect(normal.xyz, light_dir);
+	float3 view_vector = normalize(camera_pos.xyz - world_pos.xyz);
+
+	float reflect_angle = saturate(dot(light_reflected, view_vector));
+
+		// camera_pos.w = roughness
+	return diffuse_color + (light_color * pow(reflect_angle, 100.0f) * specular); // * attenuation
+
+}

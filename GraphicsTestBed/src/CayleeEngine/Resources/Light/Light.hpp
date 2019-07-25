@@ -21,7 +21,7 @@ public:
   void ClearRenderTarget();
 
   void BindForRender();
-  void BindForResource(UINT slot);
+  void BindForResource(UINT slot, bool is_compute);
 
   void GenerateViewMatrix();
   void GenerateProjectionMatrix();
